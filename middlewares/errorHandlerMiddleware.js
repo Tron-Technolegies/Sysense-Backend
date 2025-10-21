@@ -3,7 +3,7 @@ import { StatusCodes } from "http-status-codes";
 const errorHandleMiddleware = (err, req, res, next) => {
   console.log(err);
   const statusCode = err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR;
-  const msg = err.msg || "Something went wrong. Please try again later";
+  const msg = err.message || "Something went wrong. Please try again later";
   res.status(statusCode).json({ msg: msg });
 };
 export default errorHandleMiddleware;

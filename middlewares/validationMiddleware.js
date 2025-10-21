@@ -1,0 +1,74 @@
+import { body, validationResult } from "express-validator";
+import { BadRequestError } from "../errors/customErrors.js";
+import User from "../models/User.js";
+
+const withValidationErrors = (validateValues) => {
+  return [
+    validateValues,
+    (req, res, next) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        const errorMessages = errors.array().map((error) => error.msg);
+        throw new BadRequestError(errorMessages);
+      }
+      next();
+    },
+  ];
+};
+
+export const validateUserRegisterInput = withValidationErrors([
+  body("username").notEmpty().withMessage("username is required"),
+  body("email")
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Invalid Email format")
+    .custom(async (email) => {
+      const user = await User.findOne({ email: email });
+      if (user) throw new BadRequestError("email already exists");
+    }),
+  body("password").notEmpty().withMessage("Password is required"),
+  body("code")
+    .notEmpty()
+    .withMessage("Code is required")
+    .custom(async (code) => {
+      const user = await User.findOne({
+        employeeCode: { $regex: `^${code}$`, $options: "i" },
+      });
+      if (user) throw new BadRequestError("Employee Code Already Exists");
+    }),
+]);
+
+export const validateLoginInput = withValidationErrors([
+  body("email")
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Invalid email format"),
+  body("password").notEmpty().withMessage("Password is required"),
+]);
+
+export const validateForgotPasswordInput = withValidationErrors([
+  body("email")
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Invalid email format"),
+]);
+
+export const validateVerifyOTP = withValidationErrors([
+  body("email")
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Invalid email format"),
+  body("code").notEmpty().withMessage("Code is required"),
+]);
+
+export const validateResetPassword = withValidationErrors([
+  body("email")
+    .notEmpty()
+    .withMessage("Cannot Process request. Account not found"),
+  body("code").notEmpty().withMessage("Account Verification Problem"),
+  body("password").notEmpty().withMessage("Password is required"),
+]);

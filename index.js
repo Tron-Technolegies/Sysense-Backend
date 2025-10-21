@@ -6,6 +6,8 @@ import errorHandleMiddleware from "./middlewares/errorHandlerMiddleware.js";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 
+import authRouter from "./routers/authRouter.js";
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -19,6 +21,8 @@ if (process.env.NODE_ENV === "development") {
 app.get("/", (req, res) => {
   res.status(200).send("Welcome to Sysense Server");
 });
+
+app.use("/api/v1/auth", authRouter);
 
 app.use("/*path", (req, res) => {
   res.status(404).json({ msg: "Not Found in server" });
