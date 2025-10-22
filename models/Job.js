@@ -15,7 +15,6 @@ const JobSchema = new Schema(
     },
     projectIncharge: {
       type: String,
-      required: true,
     },
     isFinanceClosed: {
       type: Boolean,

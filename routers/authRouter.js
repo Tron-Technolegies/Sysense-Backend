@@ -9,6 +9,7 @@ import {
 import {
   forgotPassword,
   loginUser,
+  Logout,
   registerUser,
   resetPassword,
   verifyOTP,
@@ -21,5 +22,6 @@ router.post("/login", validateLoginInput, loginUser);
 router.post("/forgot-password", validateForgotPasswordInput, forgotPassword);
 router.post("/verify-otp", validateVerifyOTP, verifyOTP);
 router.post("/reset-password", validateResetPassword, resetPassword);
+router.post("/logout", Logout);
 
 export default router;

@@ -7,6 +7,11 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 
 import authRouter from "./routers/authRouter.js";
+import jobRouter from "./routers/jobRouter.js";
+import timesheetRouter from "./routers/timesheetRouter.js";
+import descriptionRouter from "./routers/descriptionRouter.js";
+
+import { authenticateUser } from "./middlewares/authenticationMiddleware.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -23,6 +28,9 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/jobs", jobRouter);
+app.use("/api/v1/timesheet", authenticateUser, timesheetRouter);
+app.use("/api/v1/description", descriptionRouter);
 
 app.use("/*path", (req, res) => {
   res.status(404).json({ msg: "Not Found in server" });

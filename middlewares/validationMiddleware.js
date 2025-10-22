@@ -16,6 +16,8 @@ const withValidationErrors = (validateValues) => {
   ];
 };
 
+//Auth validation
+
 export const validateUserRegisterInput = withValidationErrors([
   body("username").notEmpty().withMessage("username is required"),
   body("email")
@@ -71,4 +73,21 @@ export const validateResetPassword = withValidationErrors([
     .withMessage("Cannot Process request. Account not found"),
   body("code").notEmpty().withMessage("Account Verification Problem"),
   body("password").notEmpty().withMessage("Password is required"),
+]);
+
+//Timesheet Validation
+
+export const validateTimesheetSubmit = withValidationErrors([
+  body("job")
+    .notEmpty()
+    .withMessage("Job is required")
+    .isMongoId()
+    .withMessage("Job must be in MongoDB Id format"),
+  body("date").notEmpty().withMessage("Date is required"),
+  body("time").notEmpty().withMessage("Time is required"),
+  body("description")
+    .notEmpty()
+    .withMessage("Description is required")
+    .isMongoId()
+    .withMessage("Description must be in MongoDB id format"),
 ]);

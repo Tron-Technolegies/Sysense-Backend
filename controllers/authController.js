@@ -4,6 +4,7 @@ import {
   UnauthenticatedError,
 } from "../errors/customErrors.js";
 import User from "../models/User.js";
+import jwt from "jsonwebtoken";
 import { comparePassword, hashPassword } from "../utils/bcrypt.js";
 import { createJWT } from "../utils/jwtUtils.js";
 import { sendMail, transporter } from "../utils/nodeMailer.js";
@@ -30,9 +31,12 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) throw new NotFoundError("User not found");
-    const isPasswordCorrect = await comparePassword(password, user.password);
-    if (!isPasswordCorrect)
+    //NEED TO CHANGE BACK . NOW FOR TESTING
+    if (password !== user.password)
       throw new UnauthenticatedError("Invalid credentials");
+    // const isPasswordCorrect = await comparePassword(password, user.password);
+    // if (!isPasswordCorrect)
+    //   throw new UnauthenticatedError("Invalid credentials");
     const token = createJWT({
       userId: user._id,
       //role to be added later
@@ -101,6 +105,22 @@ export const resetPassword = async (req, res) => {
     user.password = newPassword;
     await user.save();
     res.status(200).json({ msg: "successfully updated" });
+  } catch (error) {
+    res.status(500).json({ msg: error.msg || error.message });
+  }
+};
+
+export const Logout = async (req, res) => {
+  try {
+    const token = jwt.sign({ userId: "logout" }, process.env.JWT_SECRET, {
+      expiresIn: "1s",
+    });
+    res.cookie("token", token, {
+      httpOnly: true,
+      expires: new Date(Date.now()),
+      secure: process.env.NODE_ENV === "production",
+    });
+    res.status(200).json({ msg: "successfully logged out" });
   } catch (error) {
     res.status(500).json({ msg: error.msg || error.message });
   }
