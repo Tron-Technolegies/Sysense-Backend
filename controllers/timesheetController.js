@@ -40,7 +40,12 @@ export const submitTimeSheet = async (req, res) => {
 
 export const getUserSubmittedTimeSheet = async (req, res) => {
   try {
-    const timesheets = await TimeSheet.find({ user: req.user.userId });
+    const timesheets = await TimeSheet.find({
+      user: req.user.userId,
+    })
+      .populate("job", "jobId jobName")
+      .populate("user", "employeeCode username")
+      .populate("description", "description");
     if (timesheets.length < 1) throw new NotFoundError("No timesheets found");
     res.status(200).json({ timesheets });
   } catch (error) {

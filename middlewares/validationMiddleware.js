@@ -91,3 +91,34 @@ export const validateTimesheetSubmit = withValidationErrors([
     .isMongoId()
     .withMessage("Description must be in MongoDB id format"),
 ]);
+
+//Pettycash validation
+
+export const validatePettycashSubmit = withValidationErrors([
+  body("job")
+    .notEmpty()
+    .withMessage("Job is required")
+    .isMongoId()
+    .withMessage("Job must be in MongoDB Id format"),
+  body("date").notEmpty().withMessage("Date is required"),
+  body("amount").notEmpty().withMessage("Amount is required"),
+  body("description")
+    .notEmpty()
+    .withMessage("Description is required")
+    .isMongoId()
+    .withMessage("Description must be in MongoDB id format"),
+  body("jvEntry")
+    .notEmpty()
+    .withMessage("JV Entry is required")
+    .isMongoId()
+    .withMessage("JV Entry must be in MongoDB id format"),
+]);
+
+//Leave Validations
+
+export const validateLeaveApply = withValidationErrors([
+  body("startDate").notEmpty().withMessage("Starting Date is required"),
+  body("endDate").notEmpty().withMessage("End Date is required"),
+  body("leaveType").notEmpty().withMessage("Leave Type is required"),
+  body("reason").notEmpty().withMessage("Reason is required"),
+]);

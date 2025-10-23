@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import User from "./models/User.js";
 import Job from "./models/Job.js";
 import Description from "./models/Description.js";
+import JVEntry from "./models/JVEntry.js";
 
 try {
   await mongoose.connect(process.env.MONGODB_URI);
@@ -13,7 +14,7 @@ try {
   );
   const datas = newData.map((data) => data);
   // await Data.deleteMany();
-  await Description.create(datas);
+  await JVEntry.create(datas);
   console.log("success..");
   process.exit(0);
 } catch (error) {

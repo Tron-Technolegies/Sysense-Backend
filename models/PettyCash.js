@@ -68,6 +68,9 @@ const PettyCashSchema = new Schema(
     image: {
       type: String,
     },
+    imagePublicId: {
+      type: String,
+    },
     status: {
       type: String,
     },

@@ -52,6 +52,9 @@ const LeaveSchema = new Schema(
     image: {
       type: String,
     },
+    imagePublicId: {
+      type: String,
+    },
     statusHistory: {
       type: [statusHistorySchema],
     },
