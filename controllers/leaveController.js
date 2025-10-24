@@ -14,6 +14,11 @@ export const applyLeave = async (req, res) => {
       image = response.secure_url;
       imageId = response.public_id;
     }
+    const newStatus = {
+      date: new Date(date),
+      status: "L1 Pending",
+      doneBy: req.user.userId,
+    };
     const newLeave = new Leave({
       user: req.user.userId,
       startDate: new Date(startDate),
@@ -24,6 +29,7 @@ export const applyLeave = async (req, res) => {
       imagePublicId: imageId,
       status: "L1 Pending",
     });
+    newLeave.statusHistory.push(newStatus);
     await newLeave.save();
     res.status(200).json({ msg: "Leave Applied successfully" });
   } catch (error) {

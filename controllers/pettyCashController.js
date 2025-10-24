@@ -14,6 +14,11 @@ export const submitPettyCash = async (req, res) => {
       imageUrl = response.secure_url;
       imageId = response.public_id;
     }
+    const newStatus = {
+      date: new Date(date),
+      status: "L1 Pending",
+      doneBy: req.user.userId,
+    };
     const newPettyCashData = new PettyCash({
       user: req.user.userId,
       job: job,
@@ -25,6 +30,7 @@ export const submitPettyCash = async (req, res) => {
       imagePublicId: imageId,
       status: "L1 Pending",
     });
+    newPettyCashData.statusHistory.push(newStatus);
     await newPettyCashData.save();
     res.status(200).json({ msg: "successfully added petty cash data" });
   } catch (error) {
