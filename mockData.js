@@ -14,7 +14,7 @@ try {
   );
   const datas = newData.map((data) => data);
   // await Data.deleteMany();
-  await JVEntry.create(datas);
+  await Description.create(datas);
   console.log("success..");
   process.exit(0);
 } catch (error) {
