@@ -11,32 +11,19 @@ import {
 import { getRandomEmployeeCode } from "../utils/finder.js";
 import User from "../models/User.js";
 import mongoose from "mongoose";
+import {
+  checkFor8Hour,
+  restrictL0,
+  restrictL1,
+  restrictL2,
+} from "../utils/utilityFunctions.js";
 
 //submitting the timesheet as L0 entry
 
 export const submitTimeSheet = async (req, res) => {
   try {
     const { job, date, time, description } = req.body;
-    const startTime = new Date(date);
-    startTime.setHours(0, 0, 0, 0);
-    const endTime = new Date(date);
-    endTime.setHours(23, 59, 59, 999);
-    const totalTimeSheets = await TimeSheet.find({
-      user: req.user.userId,
-      date: { $gte: startTime, $lte: endTime },
-      status: { $nin: ["L1 Rejected", "L2 Rejected", "L3 Rejected"] },
-    });
-    if (totalTimeSheets.length > 0) {
-      const totalTime = totalTimeSheets.reduce(
-        (sum, item) => sum + item.timeWorked,
-        0
-      );
-      const expected = totalTime + Number(time);
-      if (expected > 8)
-        throw new BadRequestError(
-          `Already worked ${totalTime} hours for the date. So cannot add ${time} more hours (exceeds 8 hour limit)`
-        );
-    }
+    await checkFor8Hour(req.user.userId, date, time);
     const newStatus = {
       date: new Date(),
       status: "L1 Pending",
@@ -166,6 +153,8 @@ export const rejectTimeSheetL1 = async (req, res) => {
     );
     if (!isAuthorized)
       throw new BadRequestError("Not Authorised to do this operation");
+    if (restrictL1.includes(timesheet.status))
+      throw new BadRequestError("This operation is not allowed at the moment");
     timesheet.status = "L1 Rejected";
     const newStatus = {
       status: "L1 Rejected",
@@ -181,14 +170,10 @@ export const rejectTimeSheetL1 = async (req, res) => {
 };
 
 //send back to L0 by L1
-export const sendBackL1 = async (req, res) => {
+export const sendBackToL0 = async (req, res) => {
   try {
     const userId = req.user.userId;
     const { comment, job, date, time, description } = req.body;
-    const startTime = new Date(date);
-    startTime.setHours(0, 0, 0, 0);
-    const endTime = new Date(date);
-    endTime.setHours(23, 59, 59, 999);
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet found");
     const isAuthorized = timesheet.relatedL1.some(
@@ -196,26 +181,13 @@ export const sendBackL1 = async (req, res) => {
     );
     if (!isAuthorized)
       throw new BadRequestError("Not authorised to do this operation");
+    if (restrictL1.includes(timesheet.status))
+      throw new BadRequestError("This operation is not allowed at the moment");
     timesheet.status = "L0 Pending";
     timesheet.currentComment = comment;
     timesheet.job = job;
     timesheet.date = new Date(date);
-    const totalTimeSheets = await TimeSheet.find({
-      user: timesheet.user,
-      date: { $gte: startTime, $lte: endTime },
-      status: { $nin: ["L1 Rejected", "L2 Rejected", "L3 Rejected"] },
-    });
-    if (totalTimeSheets.length > 0) {
-      const totalTime = totalTimeSheets.reduce(
-        (sum, item) => sum + item.timeWorked,
-        0
-      );
-      const expected = totalTime + Number(time);
-      if (expected > 8)
-        throw new BadRequestError(
-          `Already worked ${totalTime} hours for the date. So cannot add ${time} more hours (exceeds 8 hour limit)`
-        );
-    }
+    await checkFor8Hour(timesheet.user, date, time, timesheet._id);
     timesheet.timeWorked = time;
     timesheet.description = description;
     const newStatus = {
@@ -247,27 +219,10 @@ export const resubmitTimesheetByL0 = async (req, res) => {
     if (!timesheet) throw new NotFoundError("No timesheet found");
     if (timesheet.user.toString() !== userId.toString())
       throw new BadRequestError("Not authorised");
+    if (restrictL0.includes(timesheet.status))
+      throw new BadRequestError("This operation is not allowed at the moment");
     const { job, date, time, description } = req.body;
-    const startTime = new Date(date);
-    startTime.setHours(0, 0, 0, 0);
-    const endTime = new Date(date);
-    endTime.setHours(23, 59, 59, 999);
-    const totalTimeSheets = await TimeSheet.find({
-      user: req.user.userId,
-      date: { $gte: startTime, $lte: endTime },
-      status: { $nin: ["L1 Rejected", "L2 Rejected", "L3 Rejected"] },
-    });
-    if (totalTimeSheets.length > 0) {
-      const totalTime = totalTimeSheets.reduce(
-        (sum, item) => sum + item.timeWorked,
-        0
-      );
-      const expected = totalTime + Number(time);
-      if (expected > 8)
-        throw new BadRequestError(
-          `Already worked ${totalTime} hours for the date. So cannot add ${time} more hours (exceeds 8 hour limit)`
-        );
-    }
+    await checkFor8Hour(req.user.userId, date, time, timesheet._id);
     timesheet.status = "L1 Pending";
     timesheet.date = new Date(date);
     timesheet.timeWorked = time;
@@ -279,6 +234,274 @@ export const resubmitTimesheetByL0 = async (req, res) => {
       doneBy: userId,
     };
     timesheet.statusHistory.push(newStatus);
+    await timesheet.save();
+    res.status(200).json({ msg: "Timesheet resubmitted successfully" });
+  } catch (error) {
+    res.status(500).json({ msg: error.msg || error.message });
+  }
+};
+
+//modify timesheet by L1
+export const modifyTimesheetDataL1 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { comment, job, date, time, description } = req.body;
+    const timesheet = await TimeSheet.findById(req.params.id);
+    if (!timesheet) throw new NotFoundError("No timesheet found");
+    if (restrictL1.includes(timesheet.status))
+      throw new BadRequestError("This operation is not allowed at the moment");
+    const isAuthorized = timesheet.relatedL1.some(
+      (id) => id.toString() === userId.toString()
+    );
+    if (!isAuthorized)
+      throw new BadRequestError("Not authorised to do this operation");
+    await checkFor8Hour(timesheet.user, date, time, timesheet._id);
+
+    timesheet.job = job;
+    timesheet.date = new Date(date);
+    timesheet.timeWorked = Number(time);
+    timesheet.description = description;
+    if (comment) {
+      const newComment = {
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      };
+      timesheet.currentComment = comment;
+      timesheet.commentHistory.push(newComment);
+    }
+    await timesheet.save();
+    res.status(200).json({ msg: "successfully modified" });
+  } catch (error) {
+    res.status(500).json({ msg: error.msg || error.message });
+  }
+};
+
+//Approve data by L1
+export const approveDatabyL1 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const timesheet = await TimeSheet.findById(req.params.id);
+    if (!timesheet) throw new NotFoundError("No timesheet found");
+    if (restrictL1.includes(timesheet.status)) {
+      throw new BadRequestError("This Operation is not Allowed at the moment");
+    }
+    const isAuthorized = timesheet.relatedL1.some(
+      (item) => item.toString() === userId.toString()
+    );
+    if (!isAuthorized)
+      throw new BadRequestError("Not Authorised to do this Operation");
+    const L2 = await getRandomEmployeeCode(timesheet.user, timesheet.relatedL1);
+    if (!L2 || L2.length < 1)
+      throw new BadRequestError("No Available L2 Found");
+    const L2User = await User.findOne({ employeeCode: L2[0].employeeCode })
+      .select("_id")
+      .lean();
+    const L2Id = L2User._id;
+    const newStatus = {
+      date: new Date(),
+      status: "L2 Pending",
+      doneBy: userId,
+    };
+    timesheet.status = "L2 Pending";
+    timesheet.relatedL2.push(L2Id);
+    timesheet.statusHistory.push(newStatus);
+    await timesheet.save();
+    res.status(200).json({ msg: "Data Approved", data: timesheet });
+  } catch (error) {
+    res.status(500).json({ msg: error.msg || error.message });
+  }
+};
+
+//getting all pending data for L2
+export const getDataforL2 = async (req, res) => {
+  try {
+    const id = req.user.userId;
+    const formattedId = new mongoose.Types.ObjectId(id);
+    const queryObject = { relatedL2: formattedId };
+    const { status } = req.query;
+    if (status) {
+      queryObject.status = { $regex: status, $options: "i" };
+    }
+
+    const timesheets = await TimeSheet.find(queryObject).populate(
+      "job",
+      "jobId jobName"
+    );
+    if (timesheets.length < 1) throw new NotFoundError("No timesheets found");
+    res.status(200).json({ timesheets });
+  } catch (error) {
+    res.status(500).json({ msg: error.msg || error.message });
+  }
+};
+
+//Reject Data by L2
+export const rejectL2 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const timesheet = await TimeSheet.findById(req.params.id);
+    if (!timesheet) throw new NotFoundError("No timesheet found");
+    const isAuthorised = timesheet.relatedL2.some(
+      (id) => id.toString() === userId.toString()
+    );
+    if (!isAuthorised)
+      throw new BadRequestError("Not Authorised to do this operation");
+    if (restrictL2.includes(timesheet.status))
+      throw new BadRequestError("This operation is not allowed at the moment");
+    timesheet.status = "L2 Rejected";
+    const newStatus = {
+      status: "L2 Rejected",
+      date: new Date(),
+      doneBy: userId,
+    };
+    timesheet.statusHistory.push(newStatus);
+    await timesheet.save();
+    res.status(200).json({ msg: "Time sheet data has been rejected" });
+  } catch (error) {
+    res.status(500).json({ msg: error.msg || error.message });
+  }
+};
+
+//Approve L2
+export const approveL2 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const timesheet = await TimeSheet.findById(req.params.id);
+    if (!timesheet) throw new NotFoundError("No timesheet found");
+    const isAuthorised = timesheet.relatedL2.some(
+      (id) => id.toString() === userId.toString()
+    );
+    if (!isAuthorised)
+      throw new BadRequestError("Not Authorised to do this operation");
+    if (restrictL2.includes(timesheet.status))
+      throw new BadRequestError("This Operation is not Allowed at the moment");
+    const newStatus = {
+      date: new Date(),
+      status: "L3 Pending",
+      doneBy: userId,
+    };
+    timesheet.status = "L3 Pending";
+    timesheet.statusHistory.push(newStatus);
+    await timesheet.save();
+    res.status(200).json({ msg: "Data Approved", data: timesheet });
+  } catch (error) {
+    res.status(500).json({ msg: error.msg || error.message });
+  }
+};
+
+//modify by L2
+export const modifyL2 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { comment, job, date, time, description } = req.body;
+    const timesheet = await TimeSheet.findById(req.params.id);
+    if (!timesheet) throw new NotFoundError("No timesheet found");
+    if (restrictL2.includes(timesheet.status))
+      throw new BadRequestError("This operation is not allowed at the moment");
+    const isAuthorized = timesheet.relatedL2.some(
+      (id) => id.toString() === userId.toString()
+    );
+    if (!isAuthorized)
+      throw new BadRequestError("Not authorised to do this operation");
+    await checkFor8Hour(timesheet.user, date, time, timesheet._id);
+
+    timesheet.job = job;
+    timesheet.date = new Date(date);
+    timesheet.timeWorked = Number(time);
+    timesheet.description = description;
+    if (comment) {
+      const newComment = {
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      };
+      timesheet.currentComment = comment;
+      timesheet.commentHistory.push(newComment);
+    }
+    await timesheet.save();
+    res.status(200).json({ msg: "successfully modified" });
+  } catch (error) {
+    res.status(500).json({ msg: error.msg || error.message });
+  }
+};
+
+//sendback to L1
+export const sendBacktoL1 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { comment, job, date, time, description } = req.body;
+    const timesheet = await TimeSheet.findById(req.params.id);
+    if (!timesheet) throw new NotFoundError("No timesheet found");
+    const isAuthorized = timesheet.relatedL2.some(
+      (id) => id.toString() === userId.toString()
+    );
+    if (!isAuthorized)
+      throw new BadRequestError("Not authorised to do this operation");
+    if (restrictL2.includes(timesheet.status))
+      throw new BadRequestError("This operation is not allowed at the moment");
+    timesheet.status = "L1 Pending";
+    timesheet.currentComment = comment;
+    timesheet.job = job;
+    timesheet.date = new Date(date);
+    await checkFor8Hour(timesheet.user, date, time, timesheet._id);
+    timesheet.timeWorked = time;
+    timesheet.description = description;
+    const newStatus = {
+      status: "L1 Pending",
+      date: new Date(),
+      doneBy: userId,
+    };
+    timesheet.statusHistory.push(newStatus);
+    if (comment) {
+      const newComment = {
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      };
+      timesheet.commentHistory.push(newComment);
+    }
+    await timesheet.save();
+    res.status(200).json({ msg: "Data  has been sent back" });
+  } catch (error) {
+    res.status(500).json({ msg: error.msg || error.message });
+  }
+};
+
+//resubmit by L1
+export const resubmitByL1 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const timesheet = await TimeSheet.findById(req.params.id);
+    if (!timesheet) throw new NotFoundError("No timesheet found");
+    const isAuthorised = timesheet.relatedL1.some(
+      (id) => id.toString() === userId.toString()
+    );
+    if (!isAuthorised)
+      throw new BadRequestError("Not Authorised to do this operation");
+    if (restrictL1.includes(timesheet.status))
+      throw new BadRequestError("This operation is not allowed at the moment");
+    const { job, date, time, description, comment } = req.body;
+    await checkFor8Hour(req.user.userId, date, time, timesheet._id);
+    timesheet.status = "L2 Pending";
+    timesheet.date = new Date(date);
+    timesheet.timeWorked = time;
+    timesheet.job = job;
+    timesheet.description = description;
+    const newStatus = {
+      status: "L2 Pending",
+      date: new Date(),
+      doneBy: userId,
+    };
+    timesheet.statusHistory.push(newStatus);
+    timesheet.currentComment = comment;
+    if (comment) {
+      const newComment = {
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      };
+      timesheet.commentHistory.push(newComment);
+    }
     await timesheet.save();
     res.status(200).json({ msg: "Timesheet resubmitted successfully" });
   } catch (error) {
