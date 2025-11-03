@@ -6,6 +6,7 @@ import errorHandleMiddleware from "./middlewares/errorHandlerMiddleware.js";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import { v2 as cloudinary } from "cloudinary";
+import cors from "cors";
 
 import authRouter from "./routers/authRouter.js";
 import jobRouter from "./routers/jobRouter.js";
@@ -32,6 +33,17 @@ app.use(cookieParser());
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("short"));
 }
+
+app.use(
+  cors({
+    origin: "*", // Allow all origins
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  })
+);
+
+// Optional: Pre-flight for all routes
+app.options("/*path", cors());
 
 app.get("/", (req, res) => {
   res.status(200).send("Welcome to Sysense Server");

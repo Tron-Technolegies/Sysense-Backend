@@ -11,11 +11,11 @@ import { sendMail, transporter } from "../utils/nodeMailer.js";
 
 export const registerUser = async (req, res) => {
   try {
-    const hashedPassword = await hashPassword(req.body.password);
+    // const hashedPassword = await hashPassword(req.body.password);
     const newUser = new User({
       username: req.body.username,
       email: req.body.email.toLowerCase(),
-      password: hashedPassword,
+      password: req.body.password,
       //need to add the role later
       employeeCode: req.body.code,
     });
@@ -29,7 +29,9 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({
+      email: { $regex: email, $options: "i" },
+    });
     if (!user) throw new NotFoundError("User not found");
     //NEED TO CHANGE BACK . NOW FOR TESTING
     if (password !== user.password)
@@ -56,7 +58,9 @@ export const loginUser = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({
+      email: { $regex: email, $options: "i" },
+    });
     if (!user) throw new NotFoundError("No user found");
     const code = Math.floor(1000 + Math.random() * 9000);
     user.verificationCode = code.toString();
@@ -80,7 +84,9 @@ export const forgotPassword = async (req, res) => {
 export const verifyOTP = async (req, res) => {
   try {
     const { email, code } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({
+      email: { $regex: email, $options: "i" },
+    });
     if (!user) throw new NotFoundError("Invalid user");
     if (user.verificationCode === code.toString()) {
       res.status(200).json({ msg: "Verified successfully" });
@@ -101,8 +107,9 @@ export const resetPassword = async (req, res) => {
       throw new BadRequestError(
         "Something went wrong with account verification"
       );
-    const newPassword = await hashPassword(password);
-    user.password = newPassword;
+    // const newPassword = await hashPassword(password);
+    //For testing need to hash password
+    user.password = password;
     await user.save();
     res.status(200).json({ msg: "successfully updated" });
   } catch (error) {
