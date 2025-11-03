@@ -122,3 +122,33 @@ export const validateLeaveApply = withValidationErrors([
   body("leaveType").notEmpty().withMessage("Leave Type is required"),
   body("reason").notEmpty().withMessage("Reason is required"),
 ]);
+
+//user validations
+
+export const validateUpdateProfile = withValidationErrors([
+  body("username")
+    .notEmpty()
+    .withMessage("username is required")
+    .custom(async (username, { req }) => {
+      const user = await User.findOne({ username: username });
+      if (user && user._id.toString() !== req.user.userId.toString())
+        throw new BadRequestError("username already exists");
+    }),
+  body("email")
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Invalid email format")
+    .custom(async (email, { req }) => {
+      const user = await User.findOne({ email: email });
+      if (user && user._id.toString() !== req.user.userId.toString())
+        throw new BadRequestError("Email already exists");
+    }),
+]);
+
+export const validateUpdatePassword = withValidationErrors([
+  body("currentPassword")
+    .notEmpty()
+    .withMessage("Current Password is required"),
+  body("newPassword").notEmpty().withMessage("New Password is required"),
+]);

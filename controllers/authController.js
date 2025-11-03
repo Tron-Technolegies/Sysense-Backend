@@ -22,7 +22,9 @@ export const registerUser = async (req, res) => {
     await newUser.save();
     res.status(201).json({ msg: "Registered successfully" });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -51,7 +53,9 @@ export const loginUser = async (req, res) => {
     });
     res.status(200).json({ msg: "successfully Logged in", token });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -77,7 +81,9 @@ export const forgotPassword = async (req, res) => {
     await user.save();
     res.status(200).json({ msg: "Verification code sent" });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -94,7 +100,9 @@ export const verifyOTP = async (req, res) => {
       throw new BadRequestError("Invalid OTP");
     }
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -113,7 +121,9 @@ export const resetPassword = async (req, res) => {
     await user.save();
     res.status(200).json({ msg: "successfully updated" });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -129,6 +139,8 @@ export const Logout = async (req, res) => {
     });
     res.status(200).json({ msg: "successfully logged out" });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };

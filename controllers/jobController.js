@@ -24,6 +24,8 @@ export const getAllJobs = async (req, res) => {
     const totalJobs = await Job.countDocuments(queryObject);
     res.status(200).json({ totalJobs, jobs });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };

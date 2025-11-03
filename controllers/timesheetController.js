@@ -47,7 +47,9 @@ export const submitTimeSheet = async (req, res) => {
     await newTimeSheet.save();
     res.status(200).json({ msg: "successfully added new Time sheet data" });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -66,7 +68,9 @@ export const getUserSubmittedTimeSheet = async (req, res) => {
     if (timesheets.length < 1) throw new NotFoundError("No timesheets found");
     res.status(200).json({ timesheets });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -114,7 +118,9 @@ export const getUserTimeSheetOverview = async (req, res) => {
       data: summary,
     });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -130,14 +136,16 @@ export const getPendingActionL1 = async (req, res) => {
       queryObject.status = { $regex: status, $options: "i" };
     }
 
-    const timesheets = await TimeSheet.find(queryObject).populate(
-      "job",
-      "jobId jobName"
-    );
+    const timesheets = await TimeSheet.find(queryObject)
+      .populate("job", "jobId jobName")
+      .populate("user", "employeeCode username")
+      .populate("description", "description");
     if (timesheets.length < 1) throw new NotFoundError("No timesheets found");
     res.status(200).json({ timesheets });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -165,7 +173,9 @@ export const rejectTimeSheetL1 = async (req, res) => {
     await timesheet.save();
     res.status(200).json({ msg: "Time sheet data has been rejected" });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -207,7 +217,9 @@ export const sendBackToL0 = async (req, res) => {
     await timesheet.save();
     res.status(200).json({ msg: "Data  has been sent back" });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -237,7 +249,9 @@ export const resubmitTimesheetByL0 = async (req, res) => {
     await timesheet.save();
     res.status(200).json({ msg: "Timesheet resubmitted successfully" });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -273,7 +287,9 @@ export const modifyTimesheetDataL1 = async (req, res) => {
     await timesheet.save();
     res.status(200).json({ msg: "successfully modified" });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -309,7 +325,9 @@ export const approveDatabyL1 = async (req, res) => {
     await timesheet.save();
     res.status(200).json({ msg: "Data Approved", data: timesheet });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -324,14 +342,16 @@ export const getDataforL2 = async (req, res) => {
       queryObject.status = { $regex: status, $options: "i" };
     }
 
-    const timesheets = await TimeSheet.find(queryObject).populate(
-      "job",
-      "jobId jobName"
-    );
+    const timesheets = await TimeSheet.find(queryObject)
+      .populate("job", "jobId jobName")
+      .populate("user", "employeeCode username")
+      .populate("description", "description");
     if (timesheets.length < 1) throw new NotFoundError("No timesheets found");
     res.status(200).json({ timesheets });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -358,7 +378,9 @@ export const rejectL2 = async (req, res) => {
     await timesheet.save();
     res.status(200).json({ msg: "Time sheet data has been rejected" });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -385,7 +407,9 @@ export const approveL2 = async (req, res) => {
     await timesheet.save();
     res.status(200).json({ msg: "Data Approved", data: timesheet });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -421,7 +445,9 @@ export const modifyL2 = async (req, res) => {
     await timesheet.save();
     res.status(200).json({ msg: "successfully modified" });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -463,7 +489,9 @@ export const sendBacktoL1 = async (req, res) => {
     await timesheet.save();
     res.status(200).json({ msg: "Data  has been sent back" });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -505,6 +533,8 @@ export const resubmitByL1 = async (req, res) => {
     await timesheet.save();
     res.status(200).json({ msg: "Timesheet resubmitted successfully" });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };

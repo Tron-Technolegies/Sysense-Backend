@@ -33,7 +33,9 @@ export const applyLeave = async (req, res) => {
     await newLeave.save();
     res.status(200).json({ msg: "Leave Applied successfully" });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
 
@@ -46,6 +48,8 @@ export const getUserAppliedLeave = async (req, res) => {
     if (leaves.length < 1) throw new NotFoundError("No leave data found");
     res.status(200).json({ leaves });
   } catch (error) {
-    res.status(500).json({ msg: error.msg || error.message });
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
   }
 };
