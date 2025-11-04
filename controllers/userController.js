@@ -41,3 +41,20 @@ export const updatePassword = async (req, res) => {
       .json({ error: error.msg || error.message });
   }
 };
+
+export const getUserInfo = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select({
+      username: 1,
+      email: 1,
+      employeeCode: 1,
+      role: 1,
+    });
+    if (!user) throw new NotFoundError("No user has been found");
+    res.status(200).json(user);
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
