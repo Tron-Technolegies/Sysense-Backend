@@ -22,7 +22,7 @@ import {
 
 export const submitTimeSheet = async (req, res) => {
   try {
-    const { job, date, time, description } = req.body;
+    const { job, date, time, description, comment } = req.body;
     await checkFor8Hour(req.user.userId, date, time);
     const newStatus = {
       date: new Date(),
@@ -44,6 +44,14 @@ export const submitTimeSheet = async (req, res) => {
     });
     newTimeSheet.statusHistory.push(newStatus);
     newTimeSheet.relatedL1.push(L1Id);
+    if (comment) {
+      const newComment = {
+        date: new Date(),
+        comment: comment,
+        commentedBy: req.user.userId,
+      };
+      newTimeSheet.commentHistory.push(newComment);
+    }
     await newTimeSheet.save();
     res.status(200).json({ msg: "successfully added new Time sheet data" });
   } catch (error) {
@@ -233,7 +241,7 @@ export const resubmitTimesheetByL0 = async (req, res) => {
       throw new BadRequestError("Not authorised");
     if (restrictL0.includes(timesheet.status))
       throw new BadRequestError("This operation is not allowed at the moment");
-    const { job, date, time, description } = req.body;
+    const { job, date, time, description, comment } = req.body;
     await checkFor8Hour(req.user.userId, date, time, timesheet._id);
     timesheet.status = "L1 Pending";
     timesheet.date = new Date(date);
@@ -246,6 +254,14 @@ export const resubmitTimesheetByL0 = async (req, res) => {
       doneBy: userId,
     };
     timesheet.statusHistory.push(newStatus);
+    if (comment) {
+      const newComment = {
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      };
+      timesheet.commentHistory.push(newComment);
+    }
     await timesheet.save();
     res.status(200).json({ msg: "Timesheet resubmitted successfully" });
   } catch (error) {
