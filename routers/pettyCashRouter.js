@@ -4,6 +4,8 @@ import {
   getDataForL1,
   getUserSubmittedPettyCashData,
   rejectDataL1,
+  reSubmitDataByL0,
+  sendBackToL0,
   submitPettyCash,
 } from "../controllers/pettyCashController.js";
 import { validatePettycashSubmit } from "../middlewares/validationMiddleware.js";
@@ -19,5 +21,7 @@ router.post(
 router.get("/user", getUserSubmittedPettyCashData);
 router.get("/dataL1", getDataForL1);
 router.patch("/rejectL1/:id", rejectDataL1);
+router.patch("/sendBackToL0/:id", validatePettycashSubmit, sendBackToL0);
+router.patch("/resubmitL0/:id", validatePettycashSubmit, reSubmitDataByL0);
 
 export default router;
