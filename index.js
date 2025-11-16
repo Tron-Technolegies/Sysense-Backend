@@ -50,6 +50,10 @@ app.get("/", (req, res) => {
   res.status(200).send("Welcome to Sysense Server");
 });
 
+app.get("/api/v1/dummy", (req, res) => {
+  res.status(200).json({ data: "Dummy Data" });
+});
+
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/jobs", jobRouter);
 app.use("/api/v1/timesheet", authenticateUser, timesheetRouter);
