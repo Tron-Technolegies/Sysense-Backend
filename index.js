@@ -20,7 +20,7 @@ import userRouter from "./routers/userRouter.js";
 import { authenticateUser } from "./middlewares/authenticationMiddleware.js";
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = 3000;
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -50,7 +50,7 @@ app.get("/", (req, res) => {
   res.status(200).send("Welcome to Sysense Server");
 });
 
-app.get("/api/v1/dummy", (req, res) => {
+app.get("/api/dummy", (req, res) => {
   res.status(200).json({ data: "Dummy Data" });
 });
 
