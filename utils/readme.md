@@ -97,7 +97,7 @@ Let’s see how permissions will look in the database:
   level: 5,
   permissions: [
     {
-      module: "ServiceData",
+      module: "Timesheet",
       actions: [
         { name: "read", scope: "sameLevelChildren" },
         { name: "update", scope: "ownChildren" },

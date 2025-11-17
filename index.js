@@ -18,6 +18,7 @@ import leaveRouter from "./routers/leaveRouter.js";
 import userRouter from "./routers/userRouter.js";
 
 import { authenticateUser } from "./middlewares/authenticationMiddleware.js";
+import { getAllUsers } from "./controllers/userController.js";
 
 const app = express();
 const port = 3000;
@@ -53,6 +54,8 @@ app.get("/", (req, res) => {
 app.get("/api/dummy", (req, res) => {
   res.status(200).json({ data: "Dummy Data" });
 });
+
+app.get("/api/v1/users", getAllUsers);
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/jobs", jobRouter);

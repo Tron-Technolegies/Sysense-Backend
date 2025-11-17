@@ -140,7 +140,7 @@ export const validateUpdateProfile = withValidationErrors([
     .isEmail()
     .withMessage("Invalid email format")
     .custom(async (email, { req }) => {
-      const user = await User.findOne({ email: email });
+      const user = await User.findOne({ email: email.toLowercase() });
       if (user && user._id.toString() !== req.user.userId.toString())
         throw new BadRequestError("Email already exists");
     }),
