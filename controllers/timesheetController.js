@@ -149,7 +149,9 @@ export const getPendingActionL1 = async (req, res) => {
     const timesheets = await TimeSheet.find(queryObject)
       .populate("job", "jobId jobName")
       .populate("user", "employeeCode username")
-      .populate("description", "description");
+      .populate("description", "description")
+      .populate("relatedL1")
+      .populate("relatedL2");
     if (timesheets.length < 1) throw new NotFoundError("No timesheets found");
     res.status(200).json({ timesheets });
   } catch (error) {
