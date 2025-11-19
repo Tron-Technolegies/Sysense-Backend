@@ -3,8 +3,10 @@ import { upload } from "../middlewares/multerMiddleware.js";
 import {
   approveDataByL1,
   getDataForL1,
+  getDataForL2,
   getUserSubmittedPettyCashData,
   modifyDataByL1,
+  modifyDataL2,
   rejectDataL1,
   reSubmitDataByL0,
   sendBackToL0,
@@ -27,5 +29,7 @@ router.patch("/sendBackToL0/:id", validatePettycashSubmit, sendBackToL0);
 router.patch("/resubmitL0/:id", validatePettycashSubmit, reSubmitDataByL0);
 router.patch("/modifyL1/:id", validatePettycashSubmit, modifyDataByL1);
 router.patch("/approveL1/:id", approveDataByL1);
+router.get("/dataL2", getDataForL2);
+router.patch("/modifyL2/:id", validatePettycashSubmit, modifyDataL2);
 
 export default router;

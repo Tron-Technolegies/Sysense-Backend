@@ -85,6 +85,10 @@ const PettyCashSchema = new Schema(
       type: [mongoose.Schema.Types.ObjectId],
       ref: "User",
     },
+    mainL2: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     currentComment: {
       type: String,
     },
