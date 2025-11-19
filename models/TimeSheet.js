@@ -67,6 +67,9 @@ const TimeSheetSchema = new Schema(
     commentHistory: {
       type: [commentHistorySchema],
     },
+    l1Reubmit: {
+      type: Boolean,
+    },
   },
   { timestamps: true }
 );

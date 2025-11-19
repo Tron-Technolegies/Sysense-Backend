@@ -78,7 +78,10 @@ export const getUserSubmittedPettyCashData = async (req, res) => {
       .populate("job", "jobId jobName")
       .populate("user", "username employeeCode")
       .populate("description", "description")
-      .populate("JVEntry", "JVEntry");
+      .populate("JVEntry", "JVEntry")
+      .populate("relatedL1", "username")
+      .populate("relatedL2", "username")
+      .populate("mainL2", "username");
     if (data.length < 1) throw new NotFoundError("No data found");
     res.status(200).json({ data });
   } catch (error) {
@@ -104,7 +107,8 @@ export const getDataForL1 = async (req, res) => {
       .populate("description", "description")
       .populate("JVEntry", "JVEntry")
       .populate("relatedL1", "username")
-      .populate("relatedL2", "username");
+      .populate("relatedL2", "username")
+      .populate("mainL2", "username");
     if (pettycash.length < 1) throw new NotFoundError("No Pettycash found");
     res.status(200).json({ pettycash });
   } catch (error) {
@@ -166,7 +170,6 @@ export const sendBackToL0 = async (req, res) => {
       });
     }
     pettyCash.status = "L0 Pending";
-    pettyCash.currentComment = comment;
     pettyCash.job = job;
     pettyCash.date = new Date(date);
     pettyCash.amount = Number(amount);
@@ -177,12 +180,13 @@ export const sendBackToL0 = async (req, res) => {
       date: new Date(),
       doneBy: userId,
     });
-    if (comment) {
+    if (comment && pettyCash.currentComment !== comment) {
       pettyCash.commentHistory.push({
         date: new Date(),
         comment: comment,
         commentedBy: userId,
       });
+      pettyCash.currentComment = comment;
     }
     await pettyCash.save();
     res.status(200).json({ msg: "Data  has been sent back" });
@@ -219,19 +223,19 @@ export const reSubmitDataByL0 = async (req, res) => {
     pettyCash.description = description;
     pettyCash.job = job;
     pettyCash.JVEntry = jvEntry;
-    pettyCash.currentComment = comment || "";
     const newStatus = {
       status: "L1 Pending",
       date: new Date(),
       doneBy: userId,
     };
     pettyCash.statusHistory.push(newStatus);
-    if (comment) {
+    if (comment && pettyCash.currentComment !== comment) {
       const newComment = {
         date: new Date(),
         comment: comment,
         commentedBy: userId,
       };
+      pettyCash.currentComment = comment;
       pettyCash.commentHistory.push(newComment);
     }
     await pettyCash.save();
@@ -271,13 +275,14 @@ export const modifyDataByL1 = async (req, res) => {
     pettyCash.amount = Number(amount);
     pettyCash.description = description;
     pettyCash.JVEntry = jvEntry;
-    pettyCash.currentComment = comment;
-    if (comment) {
+
+    if (comment && pettyCash.currentComment !== comment) {
       pettyCash.commentHistory.push({
         date: new Date(),
         comment: comment,
         commentedBy: userId,
       });
+      pettyCash.currentComment = comment;
     }
     await pettyCash.save();
     res.status(200).json({ msg: "successfully modified" });
@@ -335,6 +340,13 @@ export const approveDataByL1 = async (req, res) => {
       status: "L2 Pending",
       doneBy: userId,
     });
+
+    pettyCash.l2Status = {
+      status: `Pending L2 Approvals`,
+      stages: pettyCash.relatedL2.length + 1,
+      completed: 0,
+      users: [],
+    };
     await pettyCash.save();
     res.status(200).json({ msg: "Data Approved", data: pettyCash });
   } catch (error) {
@@ -389,6 +401,12 @@ export const modifyDataL2 = async (req, res) => {
       pettyCash.mainL2?.toString() === userId.toString();
     if (!isAuthorized)
       throw new BadRequestError("Not authorised to do this operation");
+
+    const alreadyApproved = pettyCash.l2Status.users.some(
+      (id) => id.toString() === userId.toString()
+    );
+    if (alreadyApproved)
+      throw new BadRequestError("User Already Approved this data");
     if (Number(amount) !== pettyCash.amount) {
       pettyCash.amountHistory.push({
         amount: Number(amount),
@@ -413,6 +431,191 @@ export const modifyDataL2 = async (req, res) => {
 
     await pettyCash.save();
     res.status(200).json({ msg: "successfully modified" });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+//Reject by L2
+export const rejectL2 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const pettycash = await PettyCash.findById(req.params.id);
+    if (!pettycash) throw new NotFoundError("No pettycash data found");
+    const isAuthorised = pettycash.mainL2?.toString() === userId.toString();
+    if (!isAuthorised)
+      throw new UnauthorizedError("Not Authorised to do this operation");
+    if (restrictL2.includes(pettycash.status))
+      throw new BadRequestError("This operation is not allowed at the moment");
+    pettycash.status = "L2 Rejected";
+    const newStatus = {
+      status: "L2 Rejected",
+      date: new Date(),
+      doneBy: userId,
+    };
+    pettycash.statusHistory.push(newStatus);
+    await pettycash.save();
+    res.status(200).json({ msg: "Rejected", pettycash });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+//sendBack data by L2 to L1
+
+export const sendBackToL1 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { job, date, amount, description, jvEntry, comment } = req.body;
+    const pettyCash = await PettyCash.findById(req.params.id);
+    if (!pettyCash) throw new NotFoundError("No Petty Cash found");
+    const isAuthorized = pettyCash.mainL2?.toString() === userId.toString();
+    if (!isAuthorized)
+      throw new BadRequestError("Not authorised to do this operation");
+    if (restrictL2.includes(pettyCash.status))
+      throw new BadRequestError("This operation is not allowed at the moment");
+    if (Number(amount) !== pettyCash.amount) {
+      pettyCash.amountHistory.push({
+        amount: Number(amount),
+        prevAmount: pettyCash.amount,
+        changedBy: userId,
+        changedOn: new Date(),
+      });
+    }
+    pettyCash.status = "L1 Pending";
+    pettyCash.job = job;
+    pettyCash.date = new Date(date);
+    pettyCash.amount = Number(amount);
+    pettyCash.description = description;
+    pettyCash.JVEntry = jvEntry;
+    pettyCash.statusHistory.push({
+      status: "L1 Pending",
+      date: new Date(),
+      doneBy: userId,
+    });
+    if (comment && pettyCash.currentComment !== comment) {
+      pettyCash.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
+      pettyCash.currentComment = comment;
+    }
+    pettyCash.l1Resubmit = true;
+    await pettyCash.save();
+    res.status(200).json({ msg: "Data  has been sent back" });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+//Resubmit By L1
+export const resubmitByL1 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const pettyCash = await PettyCash.findById(req.params.id);
+    if (!pettyCash) throw new NotFoundError("No Petty Cash found");
+    const isAuthorised = pettyCash.relatedL1.some(
+      (id) => id.toString() === userId.toString()
+    );
+    if (!isAuthorised)
+      throw new BadRequestError("Not Authorised to do this operation");
+    if (restrictL1.includes(pettyCash.status))
+      throw new BadRequestError("This operation is not allowed at the moment");
+    const { job, date, amount, description, jvEntry, comment } = req.body;
+    if (Number(amount) !== pettyCash.amount) {
+      const newAmount = {
+        amount: Number(amount),
+        prevAmount: pettyCash.amount,
+        changedBy: userId,
+        changedOn: new Date(),
+      };
+      pettyCash.amountHistory.push(newAmount);
+    }
+    pettyCash.status = "L2 Pending";
+    pettyCash.date = new Date(date);
+    pettyCash.amount = Number(amount);
+    pettyCash.description = description;
+    pettyCash.job = job;
+    pettyCash.JVEntry = jvEntry;
+    const newStatus = {
+      status: "L2 Pending",
+      date: new Date(),
+      doneBy: userId,
+    };
+    pettyCash.statusHistory.push(newStatus);
+    if (comment && pettyCash.currentComment !== comment) {
+      const newComment = {
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      };
+      pettyCash.currentComment = comment;
+      pettyCash.commentHistory.push(newComment);
+    }
+    pettyCash.l1Resubmit = false;
+    await pettyCash.save();
+    res.status(200).json({ msg: "Petty Cash resubmitted successfully" });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+//Approve By L2
+export const approveDataByL2 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const pettyCash = await PettyCash.findById(req.params.id);
+    if (!pettyCash) throw new NotFoundError("No Pettycash  found");
+    const userIdToString = userId.toString();
+    const isAuthorised =
+      pettyCash.relatedL2.some((id) => id.toString() === userIdToString) ||
+      pettyCash.mainL2?.toString() === userIdToString;
+    if (!isAuthorised)
+      throw new BadRequestError("Not Authorised to do this operation");
+    if (restrictL2.includes(pettyCash.status))
+      throw new BadRequestError("This Operation is not Allowed at the moment");
+
+    const alreadyApproved = pettyCash.l2Status.users.some(
+      (id) => id.toString() === userIdToString
+    );
+    if (alreadyApproved)
+      throw new BadRequestError("User Already Approved this data");
+
+    const isRelatedL2 = pettyCash.relatedL2.some(
+      (id) => id.toString() === userIdToString
+    );
+    const isMainL2 = pettyCash.mainL2?.toString() === userIdToString;
+
+    const newCompleted = pettyCash.l2Status.completed + 1;
+    pettyCash.l2Status.status = `${newCompleted}/${pettyCash.l2Status.stages} L2 Approved`;
+    pettyCash.l2Status.completed = newCompleted;
+    pettyCash.l2Status.users.push(userId);
+
+    if (isRelatedL2) {
+      await pettyCash.save();
+      return res.status(200).json({ msg: "Data Approved", data: pettyCash });
+    }
+
+    if (isMainL2) {
+      const newStatus = {
+        date: new Date(),
+        status: "L3 Pending",
+        doneBy: userId,
+      };
+      pettyCash.status = "L3 Pending";
+      pettyCash.statusHistory.push(newStatus);
+      await pettyCash.save();
+      return res.status(200).json({ msg: "Data Approved", data: pettyCash });
+    }
   } catch (error) {
     res
       .status(error.statusCode || 500)

@@ -2,14 +2,18 @@ import { Router } from "express";
 import { upload } from "../middlewares/multerMiddleware.js";
 import {
   approveDataByL1,
+  approveDataByL2,
   getDataForL1,
   getDataForL2,
   getUserSubmittedPettyCashData,
   modifyDataByL1,
   modifyDataL2,
   rejectDataL1,
+  rejectL2,
+  resubmitByL1,
   reSubmitDataByL0,
   sendBackToL0,
+  sendBackToL1,
   submitPettyCash,
 } from "../controllers/pettyCashController.js";
 import { validatePettycashSubmit } from "../middlewares/validationMiddleware.js";
@@ -31,5 +35,9 @@ router.patch("/modifyL1/:id", validatePettycashSubmit, modifyDataByL1);
 router.patch("/approveL1/:id", approveDataByL1);
 router.get("/dataL2", getDataForL2);
 router.patch("/modifyL2/:id", validatePettycashSubmit, modifyDataL2);
+router.patch("/rejectL2/:id", rejectL2);
+router.patch("/sendBackToL1/:id", validatePettycashSubmit, sendBackToL1);
+router.patch("/resubmitL1/:id", validatePettycashSubmit, resubmitByL1);
+router.patch("/approveL2/:id", approveDataByL2);
 
 export default router;

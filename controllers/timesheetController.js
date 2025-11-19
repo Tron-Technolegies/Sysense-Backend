@@ -44,13 +44,14 @@ export const submitTimeSheet = async (req, res) => {
     });
     newTimeSheet.statusHistory.push(newStatus);
     newTimeSheet.relatedL1.push(L1Id);
-    if (comment) {
+    if (comment && newTimeSheet.currentComment !== comment) {
       const newComment = {
         date: new Date(),
         comment: comment,
         commentedBy: req.user.userId,
       };
       newTimeSheet.commentHistory.push(newComment);
+      newTimeSheet.currentComment = comment;
     }
     await newTimeSheet.save();
     res.status(200).json({ msg: "successfully added new Time sheet data" });
@@ -206,7 +207,7 @@ export const sendBackToL0 = async (req, res) => {
     if (restrictL1.includes(timesheet.status))
       throw new BadRequestError("This operation is not allowed at the moment");
     timesheet.status = "L0 Pending";
-    timesheet.currentComment = comment;
+
     timesheet.job = job;
     timesheet.date = new Date(date);
     await checkFor8Hour(timesheet.user, date, time, timesheet._id);
@@ -218,13 +219,14 @@ export const sendBackToL0 = async (req, res) => {
       doneBy: userId,
     };
     timesheet.statusHistory.push(newStatus);
-    if (comment) {
+    if (comment && timesheet.currentComment !== comment) {
       const newComment = {
         date: new Date(),
         comment: comment,
         commentedBy: userId,
       };
       timesheet.commentHistory.push(newComment);
+      timesheet.currentComment = comment;
     }
     await timesheet.save();
     res.status(200).json({ msg: "Data  has been sent back" });
@@ -258,13 +260,14 @@ export const resubmitTimesheetByL0 = async (req, res) => {
       doneBy: userId,
     };
     timesheet.statusHistory.push(newStatus);
-    if (comment) {
+    if (comment && timesheet.currentComment !== comment) {
       const newComment = {
         date: new Date(),
         comment: comment,
         commentedBy: userId,
       };
       timesheet.commentHistory.push(newComment);
+      timesheet.currentComment = comment;
     }
     await timesheet.save();
     res.status(200).json({ msg: "Timesheet resubmitted successfully" });
@@ -295,7 +298,7 @@ export const modifyTimesheetDataL1 = async (req, res) => {
     timesheet.date = new Date(date);
     timesheet.timeWorked = Number(time);
     timesheet.description = description;
-    if (comment) {
+    if (comment && timesheet.currentComment !== comment) {
       const newComment = {
         date: new Date(),
         comment: comment,
@@ -455,7 +458,7 @@ export const modifyL2 = async (req, res) => {
     timesheet.date = new Date(date);
     timesheet.timeWorked = Number(time);
     timesheet.description = description;
-    if (comment) {
+    if (comment && timesheet.currentComment !== comment) {
       const newComment = {
         date: new Date(),
         comment: comment,
@@ -488,7 +491,6 @@ export const sendBacktoL1 = async (req, res) => {
     if (restrictL2.includes(timesheet.status))
       throw new BadRequestError("This operation is not allowed at the moment");
     timesheet.status = "L1 Pending";
-    timesheet.currentComment = comment;
     timesheet.job = job;
     timesheet.date = new Date(date);
     await checkFor8Hour(timesheet.user, date, time, timesheet._id);
@@ -500,14 +502,16 @@ export const sendBacktoL1 = async (req, res) => {
       doneBy: userId,
     };
     timesheet.statusHistory.push(newStatus);
-    if (comment) {
+    if (comment && timesheet.currentComment !== comment) {
       const newComment = {
         date: new Date(),
         comment: comment,
         commentedBy: userId,
       };
+      timesheet.currentComment = comment;
       timesheet.commentHistory.push(newComment);
     }
+    timesheet.l1Reubmit = true;
     await timesheet.save();
     res.status(200).json({ msg: "Data  has been sent back" });
   } catch (error) {
@@ -543,15 +547,17 @@ export const resubmitByL1 = async (req, res) => {
       doneBy: userId,
     };
     timesheet.statusHistory.push(newStatus);
-    timesheet.currentComment = comment;
-    if (comment) {
+
+    if (comment && timesheet.currentComment !== comment) {
       const newComment = {
         date: new Date(),
         comment: comment,
         commentedBy: userId,
       };
+      timesheet.currentComment = comment;
       timesheet.commentHistory.push(newComment);
     }
+    timesheet.l1Reubmit = false;
     await timesheet.save();
     res.status(200).json({ msg: "Timesheet resubmitted successfully" });
   } catch (error) {

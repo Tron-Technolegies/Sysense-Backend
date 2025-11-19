@@ -13,6 +13,18 @@ const statusHistorySchema = new Schema({
   },
 });
 
+const l2StatusSchema = new Schema({
+  status: String,
+  stages: Number,
+  completed: Number,
+  users: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
+});
+
 const commentHistorySchema = new Schema({
   date: {
     type: Date,
@@ -94,6 +106,12 @@ const PettyCashSchema = new Schema(
     },
     commentHistory: {
       type: [commentHistorySchema],
+    },
+    l1Resubmit: {
+      type: Boolean,
+    },
+    l2Status: {
+      type: l2StatusSchema,
     },
   },
   {
