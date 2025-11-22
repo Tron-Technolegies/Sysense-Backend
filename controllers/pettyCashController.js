@@ -74,16 +74,29 @@ export const submitPettyCash = async (req, res) => {
 
 export const getUserSubmittedPettyCashData = async (req, res) => {
   try {
-    const data = await PettyCash.find({ user: req.user.userId })
+    const { status, currentPage } = req.body;
+    const queryObject = { user: req.user.userId };
+    if (status && status.trim() !== "") {
+      queryObject.status = { $regex: status, $options: "i" };
+    }
+    const page = Number(currentPage) || 1;
+    const limit = 15;
+    const skip = (page - 1) * limit;
+    const data = await PettyCash.find(queryObject)
       .populate("job", "jobId jobName")
       .populate("user", "username employeeCode")
       .populate("description", "description")
       .populate("JVEntry", "JVEntry")
       .populate("relatedL1", "username")
       .populate("relatedL2", "username")
-      .populate("mainL2", "username");
+      .populate("mainL2", "username")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
     if (data.length < 1) throw new NotFoundError("No data found");
-    res.status(200).json({ data });
+    const totalData = await PettyCash.countDocuments(queryObject);
+    const totalPages = Math.ceil(totalData / limit);
+    res.status(200).json({ data, totalPages });
   } catch (error) {
     res
       .status(error.statusCode || 500)
@@ -97,10 +110,13 @@ export const getDataForL1 = async (req, res) => {
     const userId = req.user.userId;
     const formattedId = new mongoose.Types.ObjectId(userId);
     const queryObject = { relatedL1: formattedId };
-    const { status } = req.query;
+    const { status, currentPage } = req.query;
     if (status) {
       queryObject.status = { $regex: status, $options: "i" };
     }
+    const page = Number(currentPage) || 1;
+    const limit = 15;
+    const skip = (page - 1) * limit;
     const pettycash = await PettyCash.find(queryObject)
       .populate("job", "jobName jobId")
       .populate("user", "username employeeCode")
@@ -108,9 +124,14 @@ export const getDataForL1 = async (req, res) => {
       .populate("JVEntry", "JVEntry")
       .populate("relatedL1", "username")
       .populate("relatedL2", "username")
-      .populate("mainL2", "username");
+      .populate("mainL2", "username")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
     if (pettycash.length < 1) throw new NotFoundError("No Pettycash found");
-    res.status(200).json({ pettycash });
+    const totalData = await PettyCash.countDocuments(queryObject);
+    const totalPages = Math.ceil(totalData / limit);
+    res.status(200).json({ pettycash, totalPages });
   } catch (error) {
     res
       .status(error.statusCode || 500)
@@ -365,21 +386,28 @@ export const getDataForL2 = async (req, res) => {
     const queryObject = {
       $or: [{ relatedL2: formattedId }, { mainL2: formattedId }],
     };
-    const { status } = req.query;
+    const { status, currentPage } = req.query;
     if (status) {
       queryObject.status = { $regex: status, $options: "i" };
     }
-
+    const page = Number(currentPage) || 1;
+    const limit = 15;
+    const skip = (page - 1) * limit;
     const pettyCash = await PettyCash.find(queryObject)
       .populate("job", "jobId jobName")
       .populate("user", "employeeCode username")
       .populate("description", "description")
       .populate("relatedL1", "username")
       .populate("relatedL2", "username")
-      .populate("mainL2", "username");
+      .populate("mainL2", "username")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
     if (pettyCash.length < 1)
       throw new NotFoundError("No Petty cash data found");
-    res.status(200).json({ pettyCash });
+    const totalData = await PettyCash.countDocuments(queryObject);
+    const totalPages = Math.ceil(totalData / limit);
+    res.status(200).json({ pettyCash, totalPages });
   } catch (error) {
     res
       .status(error.statusCode || 500)

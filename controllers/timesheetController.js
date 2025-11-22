@@ -65,19 +65,27 @@ export const submitTimeSheet = async (req, res) => {
 // get the user submitted timesheets as L0
 export const getUserSubmittedTimeSheet = async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, currentPage } = req.query;
     const queryObject = { user: req.user.userId };
     if (status) {
       queryObject.status = { $regex: status, $options: "i" };
     }
+    const page = Number(currentPage) || 1;
+    const limit = 15;
+    const skip = (page - 1) * limit;
     const timesheets = await TimeSheet.find(queryObject)
       .populate("job", "jobId jobName")
       .populate("user", "employeeCode username")
       .populate("description", "description")
       .populate("relatedL1")
-      .populate("relatedL2");
+      .populate("relatedL2")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
     if (timesheets.length < 1) throw new NotFoundError("No timesheets found");
-    res.status(200).json({ timesheets });
+    const totalTimesheets = await TimeSheet.countDocuments(queryObject);
+    const totalPages = Math.ceil(totalTimesheets / limit);
+    res.status(200).json({ timesheets, totalPages });
   } catch (error) {
     res
       .status(error.statusCode || 500)
@@ -142,19 +150,26 @@ export const getPendingActionL1 = async (req, res) => {
     const id = req.user.userId;
     const formattedId = new mongoose.Types.ObjectId(id);
     const queryObject = { relatedL1: formattedId };
-    const { status } = req.query;
+    const { status, currentPage } = req.query;
     if (status) {
       queryObject.status = { $regex: status, $options: "i" };
     }
-
+    const page = Number(currentPage) || 1;
+    const limit = 15;
+    const skip = (page - 1) * limit;
     const timesheets = await TimeSheet.find(queryObject)
       .populate("job", "jobId jobName")
       .populate("user", "employeeCode username")
       .populate("description", "description")
       .populate("relatedL1")
-      .populate("relatedL2");
+      .populate("relatedL2")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
     if (timesheets.length < 1) throw new NotFoundError("No timesheets found");
-    res.status(200).json({ timesheets });
+    const totalTimesheets = await TimeSheet.countDocuments(queryObject);
+    const totalPages = Math.ceil(totalTimesheets / limit);
+    res.status(200).json({ timesheets, totalPages });
   } catch (error) {
     res
       .status(error.statusCode || 500)
@@ -360,19 +375,26 @@ export const getDataforL2 = async (req, res) => {
     const id = req.user.userId;
     const formattedId = new mongoose.Types.ObjectId(id);
     const queryObject = { relatedL2: formattedId };
-    const { status } = req.query;
+    const { status, currentPage } = req.query;
     if (status) {
       queryObject.status = { $regex: status, $options: "i" };
     }
-
+    const page = Number(currentPage) || 1;
+    const limit = 15;
+    const skip = (page - 1) * limit;
     const timesheets = await TimeSheet.find(queryObject)
       .populate("job", "jobId jobName")
       .populate("user", "employeeCode username")
       .populate("description", "description")
       .populate("relatedL1")
-      .populate("relatedL2");
+      .populate("relatedL2")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
     if (timesheets.length < 1) throw new NotFoundError("No timesheets found");
-    res.status(200).json({ timesheets });
+    const totalTimesheets = await TimeSheet.countDocuments(queryObject);
+    const totalPages = Math.ceil(totalTimesheets / limit);
+    res.status(200).json({ timesheets, totalPages });
   } catch (error) {
     res
       .status(error.statusCode || 500)
