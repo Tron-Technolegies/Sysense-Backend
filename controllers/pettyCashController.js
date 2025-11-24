@@ -74,7 +74,7 @@ export const submitPettyCash = async (req, res) => {
 
 export const getUserSubmittedPettyCashData = async (req, res) => {
   try {
-    const { status, currentPage } = req.body;
+    const { status, currentPage } = req.query;
     const queryObject = { user: req.user.userId };
     if (status && status.trim() !== "") {
       queryObject.status = { $regex: status, $options: "i" };
