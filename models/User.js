@@ -26,6 +26,10 @@ const UserSchema = new Schema(
     verificationCode: {
       type: String,
     },
+    manager: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
   },
   { timestamps: true }
 );

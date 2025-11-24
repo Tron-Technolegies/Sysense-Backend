@@ -397,6 +397,7 @@ export const getDataForL2 = async (req, res) => {
       .populate("job", "jobId jobName")
       .populate("user", "employeeCode username")
       .populate("description", "description")
+      .populate("JVEntry", "JVEntry")
       .populate("relatedL1", "username")
       .populate("relatedL2", "username")
       .populate("mainL2", "username")
