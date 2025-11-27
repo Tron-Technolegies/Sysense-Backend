@@ -26,6 +26,18 @@ const commentHistorySchema = new Schema({
   },
 });
 
+const l2StatusSchema = new Schema({
+  status: String,
+  stages: Number,
+  completed: Number,
+  users: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
+});
+
 const LeaveSchema = new Schema(
   {
     user: {
@@ -66,11 +78,21 @@ const LeaveSchema = new Schema(
       type: [mongoose.Schema.Types.ObjectId],
       ref: "User",
     },
+    mainL2: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    l1Resubmit: {
+      type: Boolean,
+    },
     currentComment: {
       type: String,
     },
     commentHistory: {
       type: [commentHistorySchema],
+    },
+    l2Status: {
+      type: l2StatusSchema,
     },
   },
   {

@@ -8,7 +8,13 @@ const ActionSchema = new Schema({
   },
   scope: {
     type: String,
-    enum: ["self", "children", "sameLevelChildren", "organization"],
+    enum: [
+      "self",
+      "children",
+      "sameLevelChildren",
+      "sameLevel",
+      "organization",
+    ],
     default: "self",
   },
 });
