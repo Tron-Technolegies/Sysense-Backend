@@ -1,10 +1,15 @@
 import { formatImage } from "../middlewares/multerMiddleware.js";
 import { v2 as cloudinary } from "cloudinary";
 import Leave from "../models/Leave.js";
-import { NotFoundError } from "../errors/customErrors.js";
+import {
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../errors/customErrors.js";
 import mongoose from "mongoose";
 import { getRandomEmployeeCode } from "../utils/finder.js";
 import User from "../models/User.js";
+import { restrictL0, restrictL1 } from "../utils/utilityFunctions.js";
 
 export const applyLeave = async (req, res) => {
   try {
@@ -109,6 +114,205 @@ export const getDataForL1 = async (req, res) => {
       .limit(limit);
     if (!leaves) throw new NotFoundError("No Leaves found");
     res.status(200).json(leaves);
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+//Reject Leave Data by L1
+export const rejectDataByL1 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const leave = await Leave.findById(req.params.id);
+    if (!leave) throw new NotFoundError("No leave found");
+    const isAuthorised = leave.relatedL1.some(
+      (item) => item.toString() === userId.toString()
+    );
+    if (!isAuthorised)
+      throw new UnauthorizedError("Not Authorised to do this operation");
+    if (restrictL1.includes(leave.status))
+      throw new BadRequestError("This operation is not allowed at the moment");
+    leave.status = "L1 Rejected";
+    const newStatus = {
+      status: "L1 Rejected",
+      date: new Date(),
+      doneBy: userId,
+    };
+    leave.statusHistory.push(newStatus);
+    await leave.save();
+    res.status(200).json({ msg: "Rejected", leave });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+//Send Back to L0
+export const sendBackToL0 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { startDate, endDate, leaveType, reason, comment } = req.body;
+    const leave = await Leave.findById(req.params.id);
+    if (!leave) throw new NotFoundError("No Leave found");
+    const isAuthorized = leave.relatedL1.some(
+      (item) => item.toString() === userId.toString()
+    );
+    if (!isAuthorized)
+      throw new UnauthorizedError("Not Authorised to do this operation");
+    if (restrictL1.includes(leave.status))
+      throw new BadRequestError("This operation is not allowed at the moment");
+    leave.startDate = new Date(startDate);
+    leave.endDate = new Date(endDate);
+    leave.leaveType = leaveType;
+    leave.reason = reason;
+    leave.status = "L0 Pending";
+    leave.statusHistory.push({
+      status: "L0 Pending",
+      date: new Date(),
+      doneBy: userId,
+    });
+    if (comment && leave.currentComment !== comment) {
+      leave.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
+      leave.currentComment = comment;
+    }
+    await leave.save();
+    res.status(200).json({ message: "Send Back to L0", leave });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+//Resubmit by L0
+export const reSubmitByL0 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const leave = await Leave.findById(req.params.id);
+    if (!leave) throw new NotFoundError("No leave found");
+    if (leave.user.toString() !== userId.toString())
+      throw new UnauthorizedError("Not authorised to do this operation");
+    if (restrictL0.includes(leave.status))
+      throw new BadRequestError("This operation is not allowed at the moment");
+    const { startDate, endDate, leaveType, reason, comment } = req.body;
+    leave.startDate = new Date(startDate);
+    leave.endDate = new Date(endDate);
+    leave.leaveType = leaveType;
+    leave.reason = reason;
+    leave.status = "L1 Pending";
+    leave.statusHistory.push({
+      status: "L1 Pending",
+      date: new Date(),
+      doneBy: userId,
+    });
+    if (comment && leave.currentComment !== comment) {
+      leave.commentHistory.push({
+        comment: comment,
+        date: new Date(),
+        commentedBy: userId,
+      });
+      leave.currentComment = comment;
+    }
+    await leave.save();
+    res.status(200).json({ msg: "resubmitted data", leave });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+//Modify Data by L1
+export const modifyDataByL1 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { startDate, endDate, leaveType, reason, comment } = req.body;
+    const leave = await Leave.findById(req.params.id);
+    if (!leave) throw new NotFoundError("No leave found");
+    const isAuthorized = leave.relatedL1.some(
+      (item) => item.toString() === userId.toString()
+    );
+    if (!isAuthorized)
+      throw new UnauthorizedError("Not authorised to do this operation");
+    if (restrictL1.includes(leave.status))
+      throw new BadRequestError("This operation is not allowed at the moment");
+    leave.startDate = new Date(startDate);
+    leave.endDate = new Date(endDate);
+    leave.leaveType = leaveType;
+    leave.reason = reason;
+    if (comment && leave.currentComment !== comment) {
+      leave.commentHistory.push({
+        comment: comment,
+        date: new Date(),
+        commentedBy: userId,
+      });
+      leave.currentComment = comment;
+    }
+    await leave.save();
+    res.status(200).json({ msg: "Modified Successfully", leave });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+//Approve By L1
+export const approveL1 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const leave = await Leave.findById(req.params.id);
+    if (!leave) throw new NotFoundError("No leave found");
+    const isAuthorized = leave.relatedL1.some(
+      (item) => item.toString() === userId.toString()
+    );
+    if (!isAuthorized)
+      throw new UnauthorizedError("Not Authorized to do this operation");
+    if (restrictL1.includes(leave.status))
+      throw new BadRequestError("this operation is not allowed at the moment");
+    const L2 = await getRandomEmployeeCode(leave.user, leave.relatedL1, 3);
+    if (!L2 || L2.length < 1) throw new BadRequestError("No available L2");
+    const L2UserIds = await Promise.all(
+      L2.map(async (item) => {
+        const u = await User.findOne({
+          employeeCode: item.employeeCode,
+        })
+          .select("_id")
+          .lean();
+        return u._id;
+      })
+    );
+    const validL2Ids = L2UserIds.filter((id) => id); //Removing Null Values if any
+    if (validL2Ids.length < 1)
+      throw new BadRequestError("No valid L2 users found");
+    leave.mainL2 = validL2Ids[0];
+    if (validL2Ids.length > 1) {
+      leave.relatedL2.push(...validL2Ids.slice(1));
+    }
+
+    leave.status = "L2 Pending";
+    leave.statusHistory.push({
+      status: "L2 Pending",
+      date: new Date(),
+      doneBy: userId,
+    });
+
+    leave.l2Status = {
+      status: "Pending L2 Approvals",
+      stages: leave.relatedL2.length + 1,
+      completed: 0,
+      users: [],
+    };
+
+    await leave.save();
+    res.status(200).json({ msg: "Data Approved", data: leave });
   } catch (error) {
     res
       .status(error.statusCode || 500)
