@@ -14,6 +14,7 @@ import {
   restrictL1,
   restrictL2,
 } from "../utils/utilityFunctions.js";
+import { generateRegex } from "../utils/regex.js";
 
 export const applyLeave = async (req, res) => {
   try {
@@ -561,6 +562,47 @@ export const approveL2 = async (req, res) => {
       await leave.save();
       return res.status(200).json({ msg: "Data Approved", data: leave });
     }
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+//get leave overview of user
+export const leaveOverview = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { start, end } = req.query;
+    const queryObject = { user: userId };
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setFullYear(startDate.getFullYear() - 1);
+    if (!start || !end) {
+      queryObject.createdAt = { $gte: endDate, $lte: startDate };
+    }
+    if (start && end) {
+      const startRange = new Date(start);
+      const endRange = new Date(end);
+      endRange.setHours(23, 59, 59, 999);
+      queryObject.createdAt = { $gte: startRange, $lte: endRange };
+    }
+    const leaves = await Leave.find(queryObject);
+    const sick = leaves.filter((item) =>
+      generateRegex("sick").test(item.leaveType)
+    );
+    const earned = leaves.filter((item) =>
+      generateRegex("earned").test(item.leaveType)
+    );
+    const casual = leaves.filter((item) =>
+      generateRegex("casual").test(item.leaveType)
+    );
+    res.status(200).json({
+      total: leaves.length,
+      sick: sick.length,
+      earned: earned.length,
+      casual: casual.length,
+    });
   } catch (error) {
     res
       .status(error.statusCode || 500)

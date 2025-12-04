@@ -7,6 +7,7 @@ import {
   getDataForL1,
   getDataForL2,
   getUserAppliedLeave,
+  leaveOverview,
   modifyDataByL1,
   modifyDataByL2,
   rejectByL2,
@@ -34,5 +35,6 @@ router.patch("/rejectL2/:id", rejectByL2);
 router.patch("/sendBackToL1/:id", validateLeaveApply, sendBackByL2);
 router.patch("/resubmitByL1/:id", validateLeaveApply, resubmitByL1);
 router.patch("/approveL2/:id", approveL2);
+router.get("/overview", leaveOverview);
 
 export default router;
