@@ -1,4 +1,8 @@
+import mongoose from "mongoose";
 import { BadRequestError, NotFoundError } from "../errors/customErrors.js";
+import Leave from "../models/Leave.js";
+import PettyCash from "../models/PettyCash.js";
+import TimeSheet from "../models/TimeSheet.js";
 import User from "../models/User.js";
 import { comparePassword, hashPassword } from "../utils/bcrypt.js";
 
@@ -64,6 +68,96 @@ export const getAllUsers = async (req, res) => {
     const users = await User.find();
     if (users.length < 1) throw new NotFoundError("No users found");
     res.status(200).json(users);
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+//get stats for dashboard
+export const getDashboardStats = async (req, res) => {
+  try {
+    const formattedId = new mongoose.Types.ObjectId(req.user.userId);
+    const pipeline = [
+      { $match: { user: formattedId } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          approved: {
+            $sum: { $cond: [{ $eq: ["$status", "Approved"] }, 1, 0] },
+          },
+          rejected: {
+            $sum: {
+              $cond: [
+                {
+                  $in: [
+                    "$status",
+                    ["L1 Rejected", "L2 Rejected", "L3 Rejected"],
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          pending: {
+            $sum: {
+              $cond: [
+                {
+                  $not: {
+                    $in: [
+                      "$status",
+                      ["Approved", "L1 Rejected", "L2 Rejected", "L3 Rejected"],
+                    ],
+                  },
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ];
+    const pettycashStats = await PettyCash.aggregate(pipeline);
+    const timeSheetStats = await TimeSheet.aggregate(pipeline);
+    const leaveStats = await Leave.aggregate(pipeline);
+    const pettyCashResult = pettycashStats[0] || {
+      total: 0,
+      approved: 0,
+      rejected: 0,
+      pending: 0,
+    };
+    const timeSheetResult = timeSheetStats[0] || {
+      total: 0,
+      approved: 0,
+      rejected: 0,
+      pending: 0,
+    };
+    const leaveResult = leaveStats[0] || {
+      total: 0,
+      approved: 0,
+      rejected: 0,
+      pending: 0,
+    };
+    const totalStats = {
+      total: pettyCashResult.total + timeSheetResult.total + leaveResult.total,
+      approved:
+        pettyCashResult.approved +
+        timeSheetResult.approved +
+        leaveResult.approved,
+      rejected:
+        pettyCashResult.rejected +
+        timeSheetResult.rejected +
+        leaveResult.rejected,
+      pending:
+        pettyCashResult.pending + timeSheetResult.pending + leaveResult.pending,
+    };
+    res
+      .status(200)
+      .json({ pettyCashResult, timeSheetResult, leaveResult, totalStats });
   } catch (error) {
     res
       .status(error.statusCode || 500)
