@@ -16,6 +16,7 @@ import pettyCashRouter from "./routers/pettyCashRouter.js";
 import JVEntryRouter from "./routers/JVEntryRouter.js";
 import leaveRouter from "./routers/leaveRouter.js";
 import userRouter from "./routers/userRouter.js";
+import reportRouter from "./routers/reportRouter.js";
 
 import { authenticateUser } from "./middlewares/authenticationMiddleware.js";
 import { getAllUsers } from "./controllers/userController.js";
@@ -65,6 +66,7 @@ app.use("/api/v1/pettycash", authenticateUser, pettyCashRouter);
 app.use("/api/v1/jv-entry", JVEntryRouter);
 app.use("/api/v1/leave", authenticateUser, leaveRouter);
 app.use("/api/v1/user", authenticateUser, userRouter);
+app.use("/api/v1/report", authenticateUser, reportRouter);
 
 app.use("/*path", (req, res) => {
   res.status(404).json({ msg: "Not Found in server" });

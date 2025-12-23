@@ -152,3 +152,13 @@ export const validateUpdatePassword = withValidationErrors([
     .withMessage("Current Password is required"),
   body("newPassword").notEmpty().withMessage("New Password is required"),
 ]);
+
+//Report
+// isTimesheet, isPettyCash, isLeave, startDate, endDate;
+export const validateGenerateReportByUser = withValidationErrors([
+  body("isTimesheet").notEmpty().withMessage("Time sheet condition is missing"),
+  body("isPettyCash").notEmpty().withMessage("Petty Cash condition is missing"),
+  body("isLeave").notEmpty().withMessage("Leave condition is missing"),
+  body("startDate").notEmpty().withMessage("Start Date is required"),
+  body("endDate").notEmpty().withMessage("End Date is required"),
+]);
