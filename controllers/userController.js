@@ -66,7 +66,6 @@ export const getUserInfo = async (req, res) => {
 export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find();
-    if (users.length < 1) throw new NotFoundError("No users found");
     res.status(200).json(users);
   } catch (error) {
     res

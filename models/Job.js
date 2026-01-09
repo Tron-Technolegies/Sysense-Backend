@@ -3,7 +3,11 @@ import { model, Schema } from "mongoose";
 const JobSchema = new Schema(
   {
     jobId: {
-      type: String,
+      type: Number,
+      required: true,
+    },
+    jobNumber: {
+      type: Number,
       required: true,
     },
     jobName: {
@@ -13,8 +17,14 @@ const JobSchema = new Schema(
     jobDescription: {
       type: String,
     },
-    projectIncharge: {
+    projectInCharge: {
       type: String,
+    },
+    projectInCharge_empCode: {
+      type: String,
+    },
+    isClosed: {
+      type: Boolean,
     },
     isFinanceClosed: {
       type: Boolean,
@@ -47,6 +57,9 @@ const JobSchema = new Schema(
     },
     buisnessDivision: {
       type: String,
+    },
+    TimeOfLastOfflineSyncDone: {
+      type: Date,
     },
   },
   {

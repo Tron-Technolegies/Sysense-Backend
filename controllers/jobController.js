@@ -20,7 +20,6 @@ export const getAllJobs = async (req, res) => {
       queryObject.customerName = { $regex: customerName, $options: "i" };
     }
     const jobs = await Job.find(queryObject);
-    if (jobs.length < 1) throw new NotFoundError("No Jobs");
     const totalJobs = await Job.countDocuments(queryObject);
     res.status(200).json({ totalJobs, jobs });
   } catch (error) {

@@ -32,7 +32,7 @@ export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({
-      email: { $regex: email, $options: "i" },
+      email: email.toLowerCase(),
     });
     if (!user) throw new NotFoundError("User not found");
     //NEED TO CHANGE BACK . NOW FOR TESTING
@@ -63,7 +63,7 @@ export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({
-      email: { $regex: email, $options: "i" },
+      email: email.toLowerCase(),
     });
     if (!user) throw new NotFoundError("No user found");
     const code = Math.floor(1000 + Math.random() * 9000);
@@ -91,7 +91,7 @@ export const verifyOTP = async (req, res) => {
   try {
     const { email, code } = req.body;
     const user = await User.findOne({
-      email: { $regex: email, $options: "i" },
+      email: email.toLowerCase(),
     });
     if (!user) throw new NotFoundError("Invalid user");
     if (user.verificationCode === code.toString()) {

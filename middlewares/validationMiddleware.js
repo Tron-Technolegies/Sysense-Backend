@@ -162,3 +162,86 @@ export const validateGenerateReportByUser = withValidationErrors([
   body("startDate").notEmpty().withMessage("Start Date is required"),
   body("endDate").notEmpty().withMessage("End Date is required"),
 ]);
+
+//Admin Routes
+
+export const validateAddUser = withValidationErrors([
+  body("employeeId")
+    .notEmpty()
+    .withMessage("Employee Id is required")
+    .custom(async (employeeId) => {
+      const user = await User.findOne({ employeeId: employeeId });
+      if (user) throw new BadRequestError("Employee Id Already exists");
+    }),
+  body("employeeCode")
+    .notEmpty()
+    .withMessage("Employee Code is required")
+    .custom(async (employeeCode) => {
+      const user = await User.findOne({ employeeCode: employeeCode });
+      if (user) throw new BadRequestError("Employee Code Already exists");
+    }),
+  body("username").notEmpty().withMessage("username is required"),
+  body("email")
+    .notEmpty()
+    .withMessage("email is required")
+    .custom(async (email) => {
+      const user = await User.findOne({ email: email });
+      if (user) throw new BadRequestError("email already exists");
+    }),
+  body("password").notEmpty().withMessage("password is required"),
+  body("manager")
+    .notEmpty()
+    .withMessage("manager is required")
+    .isMongoId()
+    .withMessage("Invalid Manger Id"),
+  body("lineManagerName")
+    .notEmpty()
+    .withMessage("Line Manger Name  is required"),
+  body("lineManagerCode")
+    .notEmpty()
+    .withMessage("Line Manager Code is required"),
+  body("isActive").notEmpty().withMessage("Is Active is required"),
+]);
+
+export const validateEditUser = withValidationErrors([
+  body("employeeId").notEmpty().withMessage("Employee Id is required"),
+
+  body("employeeCode").notEmpty().withMessage("Employee Code is required"),
+
+  body("username").notEmpty().withMessage("username is required"),
+  body("email").notEmpty().withMessage("email is required"),
+
+  body("manager")
+    .notEmpty()
+    .withMessage("manager is required")
+    .isMongoId()
+    .withMessage("Invalid Manger Id"),
+  body("lineManagerName")
+    .notEmpty()
+    .withMessage("Line Manger Name  is required"),
+  body("lineManagerCode")
+    .notEmpty()
+    .withMessage("Line Manager Code is required"),
+  body("isActive").notEmpty().withMessage("Is Active is required"),
+]);
+
+export const validateAddJob = withValidationErrors([
+  body("jobId").notEmpty().withMessage("Job Id is required"),
+  body("jobName").notEmpty().withMessage("Job Name is required"),
+  body("jobNumber").notEmpty().withMessage("Job Number is required"),
+  body("jobType").notEmpty().withMessage("job Type is required"),
+  body("jobLocation").notEmpty().withMessage("Job Location is required"),
+  body("PO_date").notEmpty().withMessage("PO Date is required"),
+  body("customerName").notEmpty().withMessage("Customer Name is required"),
+  body("projectInCharge")
+    .notEmpty()
+    .withMessage("Project Incharge is required"),
+  body("projectInChargeCode")
+    .notEmpty()
+    .withMessage("Project Incharge Code is required"),
+  body("isClosed").notEmpty().withMessage("Is Closed is required"),
+  body("isFinanceClosed")
+    .notEmpty()
+    .withMessage("is finance closed is required"),
+  body("projectStart").notEmpty().withMessage("Project start date is required"),
+]);

@@ -23,9 +23,22 @@ const UserSchema = new Schema(
       type: String,
       unique: true,
     },
+    EmployeeId: {
+      type: String,
+    },
     verificationCode: {
       type: String,
     },
+    LineManagerName: {
+      type: String,
+    },
+    LineManager_EmployeeCode: {
+      type: String,
+    },
+    isActive: {
+      type: Boolean,
+    },
+    TimeOfLastOfflineSyncDone: { type: Date },
     manager: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
