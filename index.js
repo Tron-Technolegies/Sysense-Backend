@@ -18,6 +18,7 @@ import leaveRouter from "./routers/leaveRouter.js";
 import userRouter from "./routers/userRouter.js";
 import reportRouter from "./routers/reportRouter.js";
 import adminRouter from "./routers/adminRouter.js";
+import defaultRouter from "./routers/defaultRouter.js";
 
 import { authenticateUser } from "./middlewares/authenticationMiddleware.js";
 import { getAllUsers } from "./controllers/userController.js";
@@ -69,6 +70,7 @@ app.use("/api/v1/leave", authenticateUser, leaveRouter);
 app.use("/api/v1/user", authenticateUser, userRouter);
 app.use("/api/v1/report", authenticateUser, reportRouter);
 app.use("/api/v1/admin", adminRouter);
+app.use("/api/v1/defaults", authenticateUser, defaultRouter);
 
 app.use("/*path", (req, res) => {
   res.status(404).json({ msg: "Not Found in server" });

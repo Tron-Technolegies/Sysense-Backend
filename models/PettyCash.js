@@ -70,12 +70,10 @@ const PettyCashSchema = new Schema(
       type: [amountHistorySchema],
     },
     description: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Description",
+      type: String,
     },
     JVEntry: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "JVEntry",
+      type: String,
     },
     image: {
       type: String,

@@ -245,3 +245,13 @@ export const validateAddJob = withValidationErrors([
     .withMessage("is finance closed is required"),
   body("projectStart").notEmpty().withMessage("Project start date is required"),
 ]);
+
+//Default routes
+
+export const validateAssignDefault = withValidationErrors([
+  body("userId").notEmpty().withMessage("User Id is required"),
+]);
+
+export const validateToggleMultiple = withValidationErrors([
+  body("isMultiple").notEmpty().withMessage("Is Multiple is required"),
+]);

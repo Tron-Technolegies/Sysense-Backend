@@ -8,7 +8,11 @@ import {
   startOfDay,
   endOfDay,
 } from "date-fns";
-import { getRandomEmployeeCode } from "../utils/finder.js";
+import {
+  findTimeSheetL1,
+  findTimeSheetL2,
+  getRandomEmployeeCode,
+} from "../utils/finder.js";
 import User from "../models/User.js";
 import mongoose from "mongoose";
 import {
@@ -29,11 +33,12 @@ export const submitTimeSheet = async (req, res) => {
       status: "L1 Pending",
       doneBy: req.user.userId,
     };
-    const L1 = await getRandomEmployeeCode(req.user.userId);
-    const L1User = await User.findOne({ employeeCode: L1[0].employeeCode })
-      .select("_id")
-      .lean();
-    const L1Id = L1User._id;
+    // const L1 = await getRandomEmployeeCode(req.user.userId);
+    // const L1User = await User.findOne({ employeeCode: L1[0].employeeCode })
+    //   .select("_id")
+    //   .lean();
+    // const L1Id = L1User._id;
+    const L1Id = await findTimeSheetL1(job);
     const newTimeSheet = new TimeSheet({
       user: req.user.userId,
       job: job,
@@ -345,13 +350,13 @@ export const approveDatabyL1 = async (req, res) => {
     );
     if (!isAuthorized)
       throw new BadRequestError("Not Authorised to do this Operation");
-    const L2 = await getRandomEmployeeCode(timesheet.user, timesheet.relatedL1);
-    if (!L2 || L2.length < 1)
-      throw new BadRequestError("No Available L2 Found");
-    const L2User = await User.findOne({ employeeCode: L2[0].employeeCode })
-      .select("_id")
-      .lean();
-    const L2Id = L2User._id;
+    // const L2 = await getRandomEmployeeCode(timesheet.user, timesheet.relatedL1);
+    // if (!L2 || L2.length < 1)
+    //   throw new BadRequestError("No Available L2 Found");
+    // const L2User = await User.findOne({ employeeCode: L2[0].employeeCode })
+    //   .select("_id")
+    //   .lean();
+    const L2Id = await findTimeSheetL2(timesheet.user);
     const newStatus = {
       date: new Date(),
       status: "L2 Pending",

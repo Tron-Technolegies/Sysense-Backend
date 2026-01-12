@@ -6,7 +6,11 @@ import {
   NotFoundError,
   UnauthorizedError,
 } from "../errors/customErrors.js";
-import { getRandomEmployeeCode } from "../utils/finder.js";
+import {
+  findPettyCashL1,
+  findPettyCashL2,
+  getRandomEmployeeCode,
+} from "../utils/finder.js";
 import User from "../models/User.js";
 import mongoose from "mongoose";
 import {
@@ -14,6 +18,7 @@ import {
   restrictL1,
   restrictL2,
 } from "../utils/utilityFunctions.js";
+import Default from "../models/Default.js";
 
 //submit pettycash as L0
 
@@ -46,11 +51,11 @@ export const submitPettyCash = async (req, res) => {
       status: "L1 Pending",
     });
 
-    const L1 = await getRandomEmployeeCode(req.user.userId);
-    const L1user = await User.findOne({ employeeCode: L1[0].employeeCode })
-      .select("_id")
-      .lean();
-    const L1Id = L1user._id;
+    // const L1 = await getRandomEmployeeCode(req.user.userId);
+    // const L1user = await User.findOne({ employeeCode: L1[0].employeeCode })
+    //   .select("_id")
+    //   .lean();
+    const L1Id = await findPettyCashL1(req.user.userId);
     newPettyCashData.relatedL1.push(L1Id);
     newPettyCashData.statusHistory.push(newStatus);
     if (comment) {
@@ -319,6 +324,7 @@ export const modifyDataByL1 = async (req, res) => {
 export const approveDataByL1 = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const { l2Users } = req.body;
     const pettyCash = await PettyCash.findById(req.params.id);
     if (!pettyCash) throw new NotFoundError("No petty cash data found");
     if (restrictL1.includes(pettyCash.status)) {
@@ -331,28 +337,43 @@ export const approveDataByL1 = async (req, res) => {
       throw new BadRequestError("Not Authorised to do this Operation");
 
     //Adding L2 s
-    const L2 = await getRandomEmployeeCode(
-      pettyCash.user,
-      pettyCash.relatedL1,
-      3
-    );
-    if (!L2 || L2.length < 1) throw new BadRequestError("No available L2");
-    const L2UserIds = await Promise.all(
-      L2.map(async (item) => {
-        const u = await User.findOne({
-          employeeCode: item.employeeCode,
-        })
-          .select("_id")
-          .lean();
-        return u._id;
-      })
-    );
-    const validL2Ids = L2UserIds.filter((id) => id); //Removing Null Values if any
-    if (validL2Ids.length < 1)
-      throw new BadRequestError("No valid L2 users found");
-    pettyCash.mainL2 = validL2Ids[0];
-    if (validL2Ids.length > 1) {
-      pettyCash.relatedL2.push(...validL2Ids.slice(1));
+    // const L2 = await getRandomEmployeeCode(
+    //   pettyCash.user,
+    //   pettyCash.relatedL1,
+    //   3
+    // );
+    // if (!L2 || L2.length < 1) throw new BadRequestError("No available L2");
+    // const L2UserIds = await Promise.all(
+    //   L2.map(async (item) => {
+    //     const u = await User.findOne({
+    //       employeeCode: item.employeeCode,
+    //     })
+    //       .select("_id")
+    //       .lean();
+    //     return u._id;
+    //   })
+    // );
+    // const validL2Ids = L2UserIds.filter((id) => id); //Removing Null Values if any
+    // if (validL2Ids.length < 1)
+    //   throw new BadRequestError("No valid L2 users found");
+    // pettyCash.mainL2 = validL2Ids[0];
+    // if (validL2Ids.length > 1) {
+    //   pettyCash.relatedL2.push(...validL2Ids.slice(1));
+    // }
+    const mainL2 = await findPettyCashL2(pettyCash.job);
+    pettyCash.mainL2 = mainL2;
+
+    const defaultSettings = await Default.findOne();
+    if (defaultSettings?.pettyCashMultipleL2) {
+      if (l2Users) {
+        pettyCash.relatedL2 = [...l2Users];
+        pettyCash.l2Status = {
+          status: `Pending L2 Approvals`,
+          stages: pettyCash.relatedL2.length + 1,
+          completed: 0,
+          users: [],
+        };
+      }
     }
 
     pettyCash.status = "L2 Pending";
@@ -362,12 +383,6 @@ export const approveDataByL1 = async (req, res) => {
       doneBy: userId,
     });
 
-    pettyCash.l2Status = {
-      status: `Pending L2 Approvals`,
-      stages: pettyCash.relatedL2.length + 1,
-      completed: 0,
-      users: [],
-    };
     await pettyCash.save();
     res.status(200).json({ msg: "Data Approved", data: pettyCash });
   } catch (error) {

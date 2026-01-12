@@ -13,6 +13,18 @@ const statusHistorySchema = new Schema({
   },
 });
 
+const l2StatusSchema = new Schema({
+  status: String,
+  stages: Number,
+  completed: Number,
+  users: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
+});
+
 const commentHistorySchema = new Schema({
   date: {
     type: Date,
@@ -44,8 +56,7 @@ const TimeSheetSchema = new Schema(
       required: true,
     },
     description: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Description",
+      type: String,
     },
     status: {
       type: String,
@@ -61,6 +72,10 @@ const TimeSheetSchema = new Schema(
       type: [mongoose.Schema.Types.ObjectId],
       ref: "User",
     },
+    mainL2: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     currentComment: {
       type: String,
     },
@@ -69,6 +84,9 @@ const TimeSheetSchema = new Schema(
     },
     l1Reubmit: {
       type: Boolean,
+    },
+    l2Status: {
+      type: l2StatusSchema,
     },
   },
   { timestamps: true }

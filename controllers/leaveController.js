@@ -7,7 +7,11 @@ import {
   UnauthorizedError,
 } from "../errors/customErrors.js";
 import mongoose from "mongoose";
-import { getRandomEmployeeCode } from "../utils/finder.js";
+import {
+  findLeaveL1,
+  findLeaveL2,
+  getRandomEmployeeCode,
+} from "../utils/finder.js";
 import User from "../models/User.js";
 import {
   restrictL0,
@@ -15,6 +19,7 @@ import {
   restrictL2,
 } from "../utils/utilityFunctions.js";
 import { generateRegex } from "../utils/regex.js";
+import Default from "../models/Default.js";
 
 export const applyLeave = async (req, res) => {
   try {
@@ -50,11 +55,11 @@ export const applyLeave = async (req, res) => {
         commentedBy: req.user.userId,
       });
     }
-    const L1 = await getRandomEmployeeCode(req.user.userId);
-    const L1user = await User.findOne({ employeeCode: L1[0].employeeCode })
-      .select("_id")
-      .lean();
-    const L1Id = L1user._id;
+    // const L1 = await getRandomEmployeeCode(req.user.userId);
+    // const L1user = await User.findOne({ employeeCode: L1[0].employeeCode })
+    //   .select("_id")
+    //   .lean();
+    const L1Id = await findLeaveL1(req.user.userId);
     newLeave.statusHistory.push(newStatus);
     newLeave.relatedL1.push(L1Id);
     await newLeave.save();
@@ -273,6 +278,7 @@ export const modifyDataByL1 = async (req, res) => {
 export const approveL1 = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const { l2Users } = req.body;
     const leave = await Leave.findById(req.params.id);
     if (!leave) throw new NotFoundError("No leave found");
     const isAuthorized = leave.relatedL1.some(
@@ -282,24 +288,38 @@ export const approveL1 = async (req, res) => {
       throw new UnauthorizedError("Not Authorized to do this operation");
     if (restrictL1.includes(leave.status))
       throw new BadRequestError("this operation is not allowed at the moment");
-    const L2 = await getRandomEmployeeCode(leave.user, leave.relatedL1, 3);
-    if (!L2 || L2.length < 1) throw new BadRequestError("No available L2");
-    const L2UserIds = await Promise.all(
-      L2.map(async (item) => {
-        const u = await User.findOne({
-          employeeCode: item.employeeCode,
-        })
-          .select("_id")
-          .lean();
-        return u._id;
-      })
-    );
-    const validL2Ids = L2UserIds.filter((id) => id); //Removing Null Values if any
-    if (validL2Ids.length < 1)
-      throw new BadRequestError("No valid L2 users found");
-    leave.mainL2 = validL2Ids[0];
-    if (validL2Ids.length > 1) {
-      leave.relatedL2.push(...validL2Ids.slice(1));
+    // const L2 = await getRandomEmployeeCode(leave.user, leave.relatedL1, 3);
+    // if (!L2 || L2.length < 1) throw new BadRequestError("No available L2");
+    // const L2UserIds = await Promise.all(
+    //   L2.map(async (item) => {
+    //     const u = await User.findOne({
+    //       employeeCode: item.employeeCode,
+    //     })
+    //       .select("_id")
+    //       .lean();
+    //     return u._id;
+    //   })
+    // );
+    // const validL2Ids = L2UserIds.filter((id) => id); //Removing Null Values if any
+    // if (validL2Ids.length < 1)
+    //   throw new BadRequestError("No valid L2 users found");
+    // leave.mainL2 = validL2Ids[0];
+    // if (validL2Ids.length > 1) {
+    //   leave.relatedL2.push(...validL2Ids.slice(1));
+    // }
+    const mainL2 = await findLeaveL2(leave.relatedL1[0]);
+    leave.mainL2 = mainL2;
+    const defaultSettings = await Default.findOne();
+    if (defaultSettings?.leaveMultipleL2) {
+      if (l2Users) {
+        leave.relatedL2 = [...l2Users];
+        leave.l2Status = {
+          status: "Pending L2 Approvals",
+          stages: leave.relatedL2.length + 1,
+          completed: 0,
+          users: [],
+        };
+      }
     }
 
     leave.status = "L2 Pending";
@@ -308,13 +328,6 @@ export const approveL1 = async (req, res) => {
       date: new Date(),
       doneBy: userId,
     });
-
-    leave.l2Status = {
-      status: "Pending L2 Approvals",
-      stages: leave.relatedL2.length + 1,
-      completed: 0,
-      users: [],
-    };
 
     await leave.save();
     res.status(200).json({ msg: "Data Approved", data: leave });
