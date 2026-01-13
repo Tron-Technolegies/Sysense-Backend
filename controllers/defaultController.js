@@ -1,4 +1,4 @@
-import { NotFoundError } from "../errors/customErrors";
+import { NotFoundError } from "../errors/customErrors.js";
 import Default from "../models/Default.js";
 import User from "../models/User.js";
 
