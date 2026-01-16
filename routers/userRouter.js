@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  getAllUsers,
   getDashboardStats,
   getUserInfo,
   updatePassword,
@@ -15,6 +16,7 @@ const router = Router();
 router.patch("/update", validateUpdateProfile, updateProfile);
 router.patch("/update-password", validateUpdatePassword, updatePassword);
 router.get("/info", getUserInfo);
+router.get("/all", getAllUsers);
 router.get("/stats", getDashboardStats);
 
 export default router;

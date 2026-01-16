@@ -87,8 +87,6 @@ export const getAllJobs = async (req, res) => {
       const searchRegex = new RegExp(search, "i");
       queryObject.$or = [
         { jobName: searchRegex },
-        { jobId: searchRegex },
-        { jobNumber: searchRegex },
         { customerName: searchRegex },
       ];
     }
