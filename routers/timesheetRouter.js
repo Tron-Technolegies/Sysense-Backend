@@ -2,13 +2,16 @@ import { Router } from "express";
 import {
   approveDatabyL1,
   approveL2,
+  approveTimeSheetL3,
   getDataforL2,
+  getDataForL3,
   getPendingActionL1,
   getUserSubmittedTimeSheet,
   getUserTimeSheetOverview,
   modifyL2,
   modifyTimesheetDataL1,
   rejectL2,
+  rejectTimeSheetByL3,
   rejectTimeSheetL1,
   resubmitByL1,
   resubmitTimesheetByL0,
@@ -42,5 +45,8 @@ router.patch("/user/approveL2/:id", approveL2);
 router.patch("/user/modifyL2/:id", validateTimesheetSubmit, modifyL2);
 router.patch("/user/sendBackL2/:id", validateTimesheetSubmit, sendBacktoL1);
 router.patch("/user/resubmitL1/:id", validateTimesheetSubmit, resubmitByL1);
+router.get("/user/pendingL3", getDataForL3);
+router.patch("/user/rejectL3/:id", rejectTimeSheetByL3);
+router.patch("/user/approveL3/:id", approveTimeSheetL3);
 
 export default router;

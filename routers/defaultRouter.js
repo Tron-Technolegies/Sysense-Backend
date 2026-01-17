@@ -3,11 +3,14 @@ import { isAdmin } from "../middlewares/authenticationMiddleware.js";
 import {
   assignDefaultLeaveL1,
   assignDefaultLeaveL2,
+  assignDefaultLeaveL3,
   assignDefaultManager,
   assignDefaultPettyCashL1,
   assignDefaultPettyCashL2,
+  assignDefaultPettyCashL3,
   assignDefaultTimeSheetL1,
   assignDefaultTimeSheetL2,
+  assignDefaultTimeSheetL3,
   getDefaults,
   toggleLeaveMultipleL2,
   togglePettyCashMultipleL2,
@@ -33,6 +36,12 @@ router.post(
   assignDefaultTimeSheetL2
 );
 router.post(
+  "/timesheetL3",
+  isAdmin,
+  validateAssignDefault,
+  assignDefaultTimeSheetL3
+);
+router.post(
   "/pettyCashL1",
   isAdmin,
   validateAssignDefault,
@@ -44,8 +53,15 @@ router.post(
   validateAssignDefault,
   assignDefaultPettyCashL2
 );
+router.post(
+  "/pettyCashL3",
+  isAdmin,
+  validateAssignDefault,
+  assignDefaultPettyCashL3
+);
 router.post("/leaveL1", isAdmin, validateAssignDefault, assignDefaultLeaveL1);
 router.post("/leaveL2", isAdmin, validateAssignDefault, assignDefaultLeaveL2);
+router.post("/leaveL3", isAdmin, validateAssignDefault, assignDefaultLeaveL3);
 router.post("/manager", isAdmin, validateAssignDefault, assignDefaultManager);
 router.post(
   "/multipleLeaveL2",

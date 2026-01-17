@@ -1,4 +1,8 @@
-import { BadRequestError, NotFoundError } from "../errors/customErrors.js";
+import {
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../errors/customErrors.js";
 import TimeSheet from "../models/TimeSheet.js";
 import {
   subWeeks,
@@ -21,6 +25,7 @@ import {
   restrictL1,
   restrictL2,
 } from "../utils/utilityFunctions.js";
+import Default from "../models/Default.js";
 
 //submitting the timesheet as L0 entry
 
@@ -81,9 +86,9 @@ export const getUserSubmittedTimeSheet = async (req, res) => {
     const timesheets = await TimeSheet.find(queryObject)
       .populate("job", "jobId jobName")
       .populate("user", "employeeCode username")
-      .populate("description", "description")
-      .populate("relatedL1")
-      .populate("relatedL2")
+      .populate("relatedL1", "username")
+      .populate("relatedL2", "username")
+      .populate("mainL2", "username")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -165,9 +170,9 @@ export const getPendingActionL1 = async (req, res) => {
     const timesheets = await TimeSheet.find(queryObject)
       .populate("job", "jobId jobName")
       .populate("user", "employeeCode username")
-      .populate("description", "description")
-      .populate("relatedL1")
-      .populate("relatedL2")
+      .populate("relatedL1", "username")
+      .populate("relatedL2", "username")
+      .populate("mainL2", "username")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -340,6 +345,7 @@ export const modifyTimesheetDataL1 = async (req, res) => {
 export const approveDatabyL1 = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const { l2Users } = req.body;
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet found");
     if (restrictL1.includes(timesheet.status)) {
@@ -357,13 +363,25 @@ export const approveDatabyL1 = async (req, res) => {
     //   .select("_id")
     //   .lean();
     const L2Id = await findTimeSheetL2(timesheet.user);
+    timesheet.mainL2 = L2Id;
+    const defaultSettings = await Default.findOne();
+    if (defaultSettings.timeSheetMultipleL2) {
+      if (l2Users) {
+        timesheet.relatedL2 = [...l2Users];
+        timesheet.l2Status = {
+          status: `Pending L2 Approvals`,
+          stages: timesheet.relatedL2.length + 1,
+          completed: 0,
+          users: [],
+        };
+      }
+    }
     const newStatus = {
       date: new Date(),
       status: "L2 Pending",
       doneBy: userId,
     };
     timesheet.status = "L2 Pending";
-    timesheet.relatedL2.push(L2Id);
     timesheet.statusHistory.push(newStatus);
     await timesheet.save();
     res.status(200).json({ msg: "Data Approved", data: timesheet });
@@ -390,9 +408,9 @@ export const getDataforL2 = async (req, res) => {
     const timesheets = await TimeSheet.find(queryObject)
       .populate("job", "jobId jobName")
       .populate("user", "employeeCode username")
-      .populate("description", "description")
-      .populate("relatedL1")
-      .populate("relatedL2")
+      .populate("relatedL1", "username")
+      .populate("relatedL2", "username")
+      .populate("mainL2", "username")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -587,6 +605,102 @@ export const resubmitByL1 = async (req, res) => {
     timesheet.l1Reubmit = false;
     await timesheet.save();
     res.status(200).json({ msg: "Timesheet resubmitted successfully" });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+//get Pending data for L3
+export const getDataForL3 = async (req, res) => {
+  try {
+    const id = req.user.userId;
+    const defaultSettings = await Default.findOne();
+    if (!defaultSettings)
+      throw new BadRequestError("No default settings found for L3");
+    if (!defaultSettings.defaultTimeSheetL3)
+      throw new NotFoundError("No default L3 assigned");
+    if (defaultSettings.defaultTimeSheetL3.toString() !== id.toString())
+      throw new NotFoundError("Invalid L3 User");
+    const queryObject = {};
+    const { status, currentPage } = req.query;
+    if (status & (status !== "ALL")) {
+      queryObject.status = { $regex: status, $options: "i" };
+    }
+    const page = Number(currentPage);
+    const limit = 15;
+    const skip = (page - 1) * limit;
+    const timesheets = await TimeSheet.find(queryObject)
+      .populate("job", "jobId jobName")
+      .populate("user", "employeeCode username")
+      .populate("relatedL1", "username")
+      .populate("relatedL2", "username")
+      .populate("mainL2", "username")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    const totalTimesheets = await TimeSheet.countDocuments(queryObject);
+    const totalPages = Math.ceil(totalTimesheets / limit);
+    res.status(200).json({ timesheets, totalPages, totalTimesheets });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+export const rejectTimeSheetByL3 = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const timesheet = await TimeSheet.findById(req.params.id);
+    if (!timesheet) throw new NotFoundError("NO Timesheet found");
+    if (timesheet.status !== "L3 Pending")
+      throw new BadRequestError("Operation not allowed at the moment");
+    const defaultSettings = await Default.findOne();
+    if (!defaultSettings)
+      throw new NotFoundError("No default settings found for L3");
+    if (!defaultSettings.defaultTimeSheetL3)
+      throw new BadRequestError("No default L3 found");
+    if (defaultSettings.defaultTimeSheetL3.toString() !== userId.toString())
+      throw UnauthorizedError("Invalid L3 User");
+    timesheet.status = "L3 Rejected";
+    timesheet.statusHistory.push({
+      status: "L3 Rejected",
+      date: new Date(),
+      doneBy: userId,
+    });
+    await timesheet.save();
+    res.status(200).json({ message: "L3 Rejected" });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+export const approveTimeSheetL3 = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const timesheet = await TimeSheet.findById(req.params.id);
+    if (!timesheet) throw new NotFoundError("NO Timesheet found");
+    if (timesheet.status !== "L3 Pending")
+      throw new BadRequestError("Operation not allowed at the moment");
+    const defaultSettings = await Default.findOne();
+    if (!defaultSettings)
+      throw new NotFoundError("No default settings found for L3");
+    if (!defaultSettings.defaultTimeSheetL3)
+      throw new BadRequestError("No default L3 found");
+    if (defaultSettings.defaultTimeSheetL3.toString() !== userId.toString())
+      throw UnauthorizedError("Invalid L3 User");
+    timesheet.status = "Approved";
+    timesheet.statusHistory.push({
+      status: "Approved",
+      date: new Date(),
+      doneBy: userId,
+    });
+    await timesheet.save();
+    res.status(200).json({ message: "L3 Approved" });
   } catch (error) {
     res
       .status(error.statusCode || 500)

@@ -85,11 +85,7 @@ export const validateTimesheetSubmit = withValidationErrors([
     .withMessage("Job must be in MongoDB Id format"),
   body("date").notEmpty().withMessage("Date is required"),
   body("time").notEmpty().withMessage("Time is required"),
-  body("description")
-    .notEmpty()
-    .withMessage("Description is required")
-    .isMongoId()
-    .withMessage("Description must be in MongoDB id format"),
+  body("description").notEmpty().withMessage("Description is required"),
 ]);
 
 //Pettycash validation

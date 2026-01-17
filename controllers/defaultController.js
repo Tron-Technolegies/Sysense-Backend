@@ -42,6 +42,24 @@ export const assignDefaultTimeSheetL2 = async (req, res) => {
   }
 };
 
+export const assignDefaultTimeSheetL3 = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const user = await User.findById(userId);
+    if (!user) throw new NotFoundError("No user found");
+    await Default.findOneAndUpdate(
+      {},
+      { defaultTimeSheetL3: userId },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+    res.status(200).json({ message: "success" });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.message || error.msg });
+  }
+};
+
 export const assignDefaultPettyCashL1 = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -78,6 +96,24 @@ export const assignDefaultPettyCashL2 = async (req, res) => {
   }
 };
 
+export const assignDefaultPettyCashL3 = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const user = await User.findById(userId);
+    if (!user) throw new NotFoundError("No user found");
+    await Default.findOneAndUpdate(
+      {},
+      { defaultPettyCashL3: userId },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+    res.status(200).json({ message: "success" });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.message || error.msg });
+  }
+};
+
 export const assignDefaultLeaveL1 = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -104,6 +140,24 @@ export const assignDefaultLeaveL2 = async (req, res) => {
     await Default.findOneAndUpdate(
       {},
       { defaultLeaveL2: userId },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+    res.status(200).json({ message: "success" });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.message || error.msg });
+  }
+};
+
+export const assignDefaultLeaveL3 = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const user = await User.findById(userId);
+    if (!user) throw new NotFoundError("No user found");
+    await Default.findOneAndUpdate(
+      {},
+      { defaultLeaveL3: userId },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
     res.status(200).json({ message: "success" });
@@ -185,10 +239,13 @@ export const getDefaults = async (req, res) => {
     const defaultSettings = await Default.findOne().populate([
       "defaultTimeSheetL1",
       "defaultTimeSheetL2",
+      "defaultTimeSheetL3",
       "defaultPettyCashL1",
       "defaultPettyCashL2",
+      "defaultPettyCashL3",
       "defaultLeaveL1",
       "defaultLeaveL2",
+      "defaultLeaveL3",
       "defaultManager",
     ]);
     if (!defaultSettings) throw new NotFoundError("No default settings found");

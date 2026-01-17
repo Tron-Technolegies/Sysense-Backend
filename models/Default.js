@@ -10,6 +10,10 @@ const DefaultSchema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    defaultTimeSheetL3: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     defaultPettyCashL1: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -18,11 +22,19 @@ const DefaultSchema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    defaultPettyCashL3: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     defaultLeaveL1: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
     defaultLeaveL2: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    defaultLeaveL3: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
