@@ -98,16 +98,8 @@ export const validatePettycashSubmit = withValidationErrors([
     .withMessage("Job must be in MongoDB Id format"),
   body("date").notEmpty().withMessage("Date is required"),
   body("amount").notEmpty().withMessage("Amount is required"),
-  body("description")
-    .notEmpty()
-    .withMessage("Description is required")
-    .isMongoId()
-    .withMessage("Description must be in MongoDB id format"),
-  body("jvEntry")
-    .notEmpty()
-    .withMessage("JV Entry is required")
-    .isMongoId()
-    .withMessage("JV Entry must be in MongoDB id format"),
+  body("description").notEmpty().withMessage("Description is required"),
+  body("jvEntry").notEmpty().withMessage("JV Entry is required"),
 ]);
 
 //Leave Validations

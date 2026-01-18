@@ -4,14 +4,17 @@ import {
   applyLeave,
   approveL1,
   approveL2,
+  approveLeaveByL3,
   getDataForL1,
   getDataForL2,
+  getDataForL3,
   getUserAppliedLeave,
   leaveOverview,
   modifyDataByL1,
   modifyDataByL2,
   rejectByL2,
   rejectDataByL1,
+  rejectLeaveByL3,
   reSubmitByL0,
   resubmitByL1,
   sendBackByL2,
@@ -36,5 +39,8 @@ router.patch("/sendBackToL1/:id", validateLeaveApply, sendBackByL2);
 router.patch("/resubmitByL1/:id", validateLeaveApply, resubmitByL1);
 router.patch("/approveL2/:id", approveL2);
 router.get("/overview", leaveOverview);
+router.get("/dataL3", getDataForL3);
+router.patch("/rejectL3/:id", rejectLeaveByL3);
+router.patch("/approveL3/:id", approveLeaveByL3);
 
 export default router;

@@ -90,8 +90,6 @@ export const getUserSubmittedPettyCashData = async (req, res) => {
     const data = await PettyCash.find(queryObject)
       .populate("job", "jobId jobName")
       .populate("user", "username employeeCode")
-      .populate("description", "description")
-      .populate("JVEntry", "JVEntry")
       .populate("relatedL1", "username")
       .populate("relatedL2", "username")
       .populate("mainL2", "username")
@@ -125,8 +123,6 @@ export const getDataForL1 = async (req, res) => {
     const pettycash = await PettyCash.find(queryObject)
       .populate("job", "jobName jobId")
       .populate("user", "username employeeCode")
-      .populate("description", "description")
-      .populate("JVEntry", "JVEntry")
       .populate("relatedL1", "username")
       .populate("relatedL2", "username")
       .populate("mainL2", "username")
@@ -151,7 +147,7 @@ export const rejectDataL1 = async (req, res) => {
     const pettycash = await PettyCash.findById(req.params.id);
     if (!pettycash) throw new NotFoundError("No pettycash data found");
     const isAuthorised = pettycash.relatedL1.some(
-      (item) => item.toString() === userId.toString()
+      (item) => item.toString() === userId.toString(),
     );
     if (!isAuthorised)
       throw new UnauthorizedError("Not Authorised to do this operation");
@@ -181,7 +177,7 @@ export const sendBackToL0 = async (req, res) => {
     const pettyCash = await PettyCash.findById(req.params.id);
     if (!pettyCash) throw new NotFoundError("No Petty Cash found");
     const isAuthorized = pettyCash.relatedL1.some(
-      (id) => id.toString() === userId.toString()
+      (id) => id.toString() === userId.toString(),
     );
     if (!isAuthorized)
       throw new BadRequestError("Not authorised to do this operation");
@@ -284,7 +280,7 @@ export const modifyDataByL1 = async (req, res) => {
     if (restrictL1.includes(pettyCash.status))
       throw new BadRequestError("This operation is not allowed at the moment");
     const isAuthorized = pettyCash.relatedL1.some(
-      (id) => id.toString() === userId.toString()
+      (id) => id.toString() === userId.toString(),
     );
     if (!isAuthorized)
       throw new BadRequestError("Not authorised to do this operation");
@@ -331,7 +327,7 @@ export const approveDataByL1 = async (req, res) => {
       throw new BadRequestError("This Operation is not Allowed at the moment");
     }
     const isAuthorized = pettyCash.relatedL1.some(
-      (item) => item.toString() === userId.toString()
+      (item) => item.toString() === userId.toString(),
     );
     if (!isAuthorized)
       throw new BadRequestError("Not Authorised to do this Operation");
@@ -411,8 +407,6 @@ export const getDataForL2 = async (req, res) => {
     const pettyCash = await PettyCash.find(queryObject)
       .populate("job", "jobId jobName")
       .populate("user", "employeeCode username")
-      .populate("description", "description")
-      .populate("JVEntry", "JVEntry")
       .populate("relatedL1", "username")
       .populate("relatedL2", "username")
       .populate("mainL2", "username")
@@ -447,7 +441,7 @@ export const modifyDataL2 = async (req, res) => {
       throw new BadRequestError("Not authorised to do this operation");
 
     const alreadyApproved = pettyCash.l2Status.users.some(
-      (id) => id.toString() === userId.toString()
+      (id) => id.toString() === userId.toString(),
     );
     if (alreadyApproved)
       throw new BadRequestError("User Already Approved this data");
@@ -566,7 +560,7 @@ export const resubmitByL1 = async (req, res) => {
     const pettyCash = await PettyCash.findById(req.params.id);
     if (!pettyCash) throw new NotFoundError("No Petty Cash found");
     const isAuthorised = pettyCash.relatedL1.some(
-      (id) => id.toString() === userId.toString()
+      (id) => id.toString() === userId.toString(),
     );
     if (!isAuthorised)
       throw new BadRequestError("Not Authorised to do this operation");
@@ -629,13 +623,13 @@ export const approveDataByL2 = async (req, res) => {
       throw new BadRequestError("This Operation is not Allowed at the moment");
 
     const alreadyApproved = pettyCash.l2Status.users.some(
-      (id) => id.toString() === userIdToString
+      (id) => id.toString() === userIdToString,
     );
     if (alreadyApproved)
       throw new BadRequestError("User Already Approved this data");
 
     const isRelatedL2 = pettyCash.relatedL2.some(
-      (id) => id.toString() === userIdToString
+      (id) => id.toString() === userIdToString,
     );
     const isMainL2 = pettyCash.mainL2?.toString() === userIdToString;
 
@@ -660,6 +654,103 @@ export const approveDataByL2 = async (req, res) => {
       await pettyCash.save();
       return res.status(200).json({ msg: "Data Approved", data: pettyCash });
     }
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+//get data for l3
+
+export const getDataForL3 = async (req, res) => {
+  try {
+    const id = req.user.userId;
+    const defaultSettings = await Default.findOne();
+    if (!defaultSettings)
+      throw new BadRequestError("No default settings found for L3");
+    if (!defaultSettings.defaultPettyCashL3)
+      throw new NotFoundError("No default L3 assigned");
+    if (defaultSettings.defaultPettyCashL3.toString() !== id.toString())
+      throw new NotFoundError("Invalid L3 User");
+    const queryObject = {};
+    const { status, currentPage } = req.query;
+    if (status & (status !== "ALL")) {
+      queryObject.status = { $regex: status, $options: "i" };
+    }
+    const page = Number(currentPage);
+    const limit = 15;
+    const skip = (page - 1) * limit;
+    const pettycash = await PettyCash.find(queryObject)
+      .populate("job", "jobId jobName")
+      .populate("user", "employeeCode username")
+      .populate("relatedL1", "username")
+      .populate("relatedL2", "username")
+      .populate("mainL2", "username")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    const totalPettyCash = await PettyCash.countDocuments(queryObject);
+    const totalPages = Math.ceil(totalPettyCash / limit);
+    res.status(200).json({ pettycash, totalPages, totalPettyCash });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+export const rejectPettyCashByL3 = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const pettycash = await PettyCash.findById(req.params.id);
+    if (!pettycash) throw new NotFoundError("No petty cash found");
+    if (pettycash.status !== "L3 Pending")
+      throw new BadRequestError("Operation not allowed at the moment");
+    const defaultSettings = await Default.findOne();
+    if (!defaultSettings)
+      throw new NotFoundError("No default settings found for L3");
+    if (!defaultSettings.defaultPettyCashL3)
+      throw new BadRequestError("No default L3 found");
+    if (defaultSettings.defaultPettyCashL3.toString() !== userId.toString())
+      throw UnauthorizedError("Invalid L3 User");
+    pettycash.status = "L3 Rejected";
+    pettycash.statusHistory.push({
+      status: "L3 Rejected",
+      date: new Date(),
+      doneBy: userId,
+    });
+    await pettycash.save();
+    res.status(200).json({ message: "L3 Rejected" });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+export const approveDataByL3 = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const pettycash = await PettyCash.findById(req.params.id);
+    if (!pettycash) throw new NotFoundError("No petty cash found");
+    if (pettycash.status !== "L3 Pending")
+      throw new BadRequestError("Operation not allowed at the moment");
+    const defaultSettings = await Default.findOne();
+    if (!defaultSettings)
+      throw new NotFoundError("No default settings found for L3");
+    if (!defaultSettings.defaultPettyCashL3)
+      throw new BadRequestError("No default L3 found");
+    if (defaultSettings.defaultPettyCashL3.toString() !== userId.toString())
+      throw UnauthorizedError("Invalid L3 User");
+    pettycash.status = "Approved";
+    pettycash.statusHistory.push({
+      status: "Approved",
+      date: new Date(),
+      doneBy: userId,
+    });
+    await pettycash.save();
+    res.status(200).json({ message: "Approved" });
   } catch (error) {
     res
       .status(error.statusCode || 500)

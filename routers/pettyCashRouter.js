@@ -3,13 +3,16 @@ import { upload } from "../middlewares/multerMiddleware.js";
 import {
   approveDataByL1,
   approveDataByL2,
+  approveDataByL3,
   getDataForL1,
   getDataForL2,
+  getDataForL3,
   getUserSubmittedPettyCashData,
   modifyDataByL1,
   modifyDataL2,
   rejectDataL1,
   rejectL2,
+  rejectPettyCashByL3,
   resubmitByL1,
   reSubmitDataByL0,
   sendBackToL0,
@@ -24,7 +27,7 @@ router.post(
   "/",
   upload.single("image"),
   validatePettycashSubmit,
-  submitPettyCash
+  submitPettyCash,
 );
 router.get("/user", getUserSubmittedPettyCashData);
 router.get("/dataL1", getDataForL1);
@@ -39,5 +42,8 @@ router.patch("/rejectL2/:id", rejectL2);
 router.patch("/sendBackToL1/:id", validatePettycashSubmit, sendBackToL1);
 router.patch("/resubmitL1/:id", validatePettycashSubmit, resubmitByL1);
 router.patch("/approveL2/:id", approveDataByL2);
+router.get("/dataL3", getDataForL3);
+router.patch("/rejectL3/:id", rejectPettyCashByL3);
+router.patch("/approveL3/:id", approveDataByL3);
 
 export default router;

@@ -138,7 +138,7 @@ export const rejectDataByL1 = async (req, res) => {
     const leave = await Leave.findById(req.params.id);
     if (!leave) throw new NotFoundError("No leave found");
     const isAuthorised = leave.relatedL1.some(
-      (item) => item.toString() === userId.toString()
+      (item) => item.toString() === userId.toString(),
     );
     if (!isAuthorised)
       throw new UnauthorizedError("Not Authorised to do this operation");
@@ -168,7 +168,7 @@ export const sendBackToL0 = async (req, res) => {
     const leave = await Leave.findById(req.params.id);
     if (!leave) throw new NotFoundError("No Leave found");
     const isAuthorized = leave.relatedL1.some(
-      (item) => item.toString() === userId.toString()
+      (item) => item.toString() === userId.toString(),
     );
     if (!isAuthorized)
       throw new UnauthorizedError("Not Authorised to do this operation");
@@ -247,7 +247,7 @@ export const modifyDataByL1 = async (req, res) => {
     const leave = await Leave.findById(req.params.id);
     if (!leave) throw new NotFoundError("No leave found");
     const isAuthorized = leave.relatedL1.some(
-      (item) => item.toString() === userId.toString()
+      (item) => item.toString() === userId.toString(),
     );
     if (!isAuthorized)
       throw new UnauthorizedError("Not authorised to do this operation");
@@ -282,7 +282,7 @@ export const approveL1 = async (req, res) => {
     const leave = await Leave.findById(req.params.id);
     if (!leave) throw new NotFoundError("No leave found");
     const isAuthorized = leave.relatedL1.some(
-      (item) => item.toString() === userId.toString()
+      (item) => item.toString() === userId.toString(),
     );
     if (!isAuthorized)
       throw new UnauthorizedError("Not Authorized to do this operation");
@@ -395,12 +395,12 @@ export const modifyDataByL2 = async (req, res) => {
     const isAuthorized = leave.relatedL2.some(
       (item) =>
         item.toString() === userId.toString() ||
-        leave.mainL2.toString() === userId.toString()
+        leave.mainL2.toString() === userId.toString(),
     );
     if (!isAuthorized)
       throw new UnauthorizedError("Not Authorized to do this operation");
     const alreadyApproved = leave.l2Status.users.some(
-      (item) => item.toString() === userId.toString()
+      (item) => item.toString() === userId.toString(),
     );
     if (alreadyApproved)
       throw new BadRequestError("User already Approved this data");
@@ -499,7 +499,7 @@ export const resubmitByL1 = async (req, res) => {
     const leave = await Leave.findById(req.params.id);
     if (!leave) throw new NotFoundError("No leave found");
     const isAuthorised = leave.relatedL1.some(
-      (item) => item.toString() === userId.toString()
+      (item) => item.toString() === userId.toString(),
     );
     if (!isAuthorised)
       throw new UnauthorizedError("Not authorised to do this operation");
@@ -547,12 +547,12 @@ export const approveL2 = async (req, res) => {
     if (restrictL2.includes(leave.status))
       throw new BadRequestError("This operation is not allowed at the moment");
     const alreadyApproved = leave.l2Status.users.some(
-      (id) => id.toString() === userId.toString()
+      (id) => id.toString() === userId.toString(),
     );
     if (alreadyApproved)
       throw new BadRequestError("User already approved this data");
     const isRelatedL2 = leave.relatedL2.some(
-      (id) => id.toString() === userId.toString()
+      (id) => id.toString() === userId.toString(),
     );
     const isMainL2 = leave.mainL2.toString() === userId.toString();
     const newCompleted = leave.l2Status.completed + 1;
@@ -602,13 +602,13 @@ export const leaveOverview = async (req, res) => {
     }
     const leaves = await Leave.find(queryObject);
     const sick = leaves.filter((item) =>
-      generateRegex("sick").test(item.leaveType)
+      generateRegex("sick").test(item.leaveType),
     );
     const earned = leaves.filter((item) =>
-      generateRegex("earned").test(item.leaveType)
+      generateRegex("earned").test(item.leaveType),
     );
     const casual = leaves.filter((item) =>
-      generateRegex("casual").test(item.leaveType)
+      generateRegex("casual").test(item.leaveType),
     );
     res.status(200).json({
       total: leaves.length,
@@ -616,6 +616,113 @@ export const leaveOverview = async (req, res) => {
       earned: earned.length,
       casual: casual.length,
     });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+//get data for L3
+export const getDataForL3 = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const defaultSettings = await Default.findOne();
+    if (!defaultSettings)
+      throw new BadRequestError("No default settings found for L3");
+    if (!defaultSettings.defaultLeaveL3)
+      throw new NotFoundError("No default L3 assigned");
+    if (defaultSettings.defaultLeaveL3.toString() !== userId.toString())
+      throw new NotFoundError("Invalid L3 User");
+    const queryObject = {};
+    const { status, currentPage, startDate, endDate } = req.query;
+    if (status & (status !== "ALL")) {
+      queryObject.status = { $regex: status, $options: "i" };
+    }
+    if (startDate || endDate) {
+      queryObject.createdAt = {};
+    }
+    if (startDate) {
+      const start = new Date(startDate);
+      queryObject.createdAt.$gte = start;
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      queryObject.createdAt.$lte = end;
+    }
+    const page = Number(currentPage);
+    const limit = 15;
+    const skip = (page - 1) * limit;
+    const leaves = await Leave.find(queryObject)
+      .populate("user", "employeeCode username")
+      .populate("relatedL1", "username")
+      .populate("relatedL2", "username")
+      .populate("mainL2", "username")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    const totalLeaves = await Leave.countDocuments(queryObject);
+    const totalPages = Math.ceil(totalLeaves / limit);
+    res.status(200).json({ leaves, totalLeaves, totalPages });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+export const rejectLeaveByL3 = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const leave = await Leave.findById(req.params.id);
+    if (!leave) throw new NotFoundError("NO leave found");
+    if (leave.status !== "L3 Pending")
+      throw new NotFoundError("Operation not allowed at the moment");
+    const defaultSettings = await Default.findOne();
+    if (!defaultSettings)
+      throw new NotFoundError("No default settings found for L3");
+    if (!defaultSettings.defaultLeaveL3)
+      throw new BadRequestError("No default L3 found");
+    if (defaultSettings.defaultLeaveL3.toString() !== userId.toString())
+      throw UnauthorizedError("Invalid L3 User");
+    leave.status = "L3 Rejected";
+    leave.statusHistory.push({
+      status: "L3 Rejected",
+      date: new Date(),
+      doneBy: userId,
+    });
+    await leave.save();
+    res.status(200).json({ message: "L3 Rejected" });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+export const approveLeaveByL3 = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const leave = await Leave.findById(req.params.id);
+    if (!leave) throw new NotFoundError("NO leave found");
+    if (leave.status !== "L3 Pending")
+      throw new NotFoundError("Operation not allowed at the moment");
+    const defaultSettings = await Default.findOne();
+    if (!defaultSettings)
+      throw new NotFoundError("No default settings found for L3");
+    if (!defaultSettings.defaultLeaveL3)
+      throw new BadRequestError("No default L3 found");
+    if (defaultSettings.defaultLeaveL3.toString() !== userId.toString())
+      throw UnauthorizedError("Invalid L3 User");
+    leave.status = "Approved";
+    leave.statusHistory.push({
+      status: "Approved",
+      date: new Date(),
+      doneBy: userId,
+    });
+    await leave.save();
+    res.status(200).json({ message: "Approved" });
   } catch (error) {
     res
       .status(error.statusCode || 500)
