@@ -195,7 +195,7 @@ export const rejectTimeSheetL1 = async (req, res) => {
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet has been found");
     const isAuthorized = timesheet.relatedL1.some(
-      (id) => id.toString() === formattedId.toString()
+      (id) => id.toString() === formattedId.toString(),
     );
     if (!isAuthorized)
       throw new BadRequestError("Not Authorised to do this operation");
@@ -225,7 +225,7 @@ export const sendBackToL0 = async (req, res) => {
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet found");
     const isAuthorized = timesheet.relatedL1.some(
-      (id) => id.toString() === userId.toString()
+      (id) => id.toString() === userId.toString(),
     );
     if (!isAuthorized)
       throw new BadRequestError("Not authorised to do this operation");
@@ -313,7 +313,7 @@ export const modifyTimesheetDataL1 = async (req, res) => {
     if (restrictL1.includes(timesheet.status))
       throw new BadRequestError("This operation is not allowed at the moment");
     const isAuthorized = timesheet.relatedL1.some(
-      (id) => id.toString() === userId.toString()
+      (id) => id.toString() === userId.toString(),
     );
     if (!isAuthorized)
       throw new BadRequestError("Not authorised to do this operation");
@@ -352,7 +352,7 @@ export const approveDatabyL1 = async (req, res) => {
       throw new BadRequestError("This Operation is not Allowed at the moment");
     }
     const isAuthorized = timesheet.relatedL1.some(
-      (item) => item.toString() === userId.toString()
+      (item) => item.toString() === userId.toString(),
     );
     if (!isAuthorized)
       throw new BadRequestError("Not Authorised to do this Operation");
@@ -397,7 +397,9 @@ export const getDataforL2 = async (req, res) => {
   try {
     const id = req.user.userId;
     const formattedId = new mongoose.Types.ObjectId(id);
-    const queryObject = { relatedL2: formattedId };
+    const queryObject = {
+      $or: [{ relatedL2: formattedId }, { mainL2: formattedId }],
+    };
     const { status, currentPage } = req.query;
     if (status) {
       queryObject.status = { $regex: status, $options: "i" };
@@ -432,7 +434,7 @@ export const rejectL2 = async (req, res) => {
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet found");
     const isAuthorised = timesheet.relatedL2.some(
-      (id) => id.toString() === userId.toString()
+      (id) => id.toString() === userId.toString(),
     );
     if (!isAuthorised)
       throw new BadRequestError("Not Authorised to do this operation");
@@ -461,7 +463,7 @@ export const approveL2 = async (req, res) => {
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet found");
     const isAuthorised = timesheet.relatedL2.some(
-      (id) => id.toString() === userId.toString()
+      (id) => id.toString() === userId.toString(),
     );
     if (!isAuthorised)
       throw new BadRequestError("Not Authorised to do this operation");
@@ -493,7 +495,7 @@ export const modifyL2 = async (req, res) => {
     if (restrictL2.includes(timesheet.status))
       throw new BadRequestError("This operation is not allowed at the moment");
     const isAuthorized = timesheet.relatedL2.some(
-      (id) => id.toString() === userId.toString()
+      (id) => id.toString() === userId.toString(),
     );
     if (!isAuthorized)
       throw new BadRequestError("Not authorised to do this operation");
@@ -529,7 +531,7 @@ export const sendBacktoL1 = async (req, res) => {
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet found");
     const isAuthorized = timesheet.relatedL2.some(
-      (id) => id.toString() === userId.toString()
+      (id) => id.toString() === userId.toString(),
     );
     if (!isAuthorized)
       throw new BadRequestError("Not authorised to do this operation");
@@ -573,7 +575,7 @@ export const resubmitByL1 = async (req, res) => {
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet found");
     const isAuthorised = timesheet.relatedL1.some(
-      (id) => id.toString() === userId.toString()
+      (id) => id.toString() === userId.toString(),
     );
     if (!isAuthorised)
       throw new BadRequestError("Not Authorised to do this operation");
