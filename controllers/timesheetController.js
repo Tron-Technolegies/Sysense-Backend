@@ -433,9 +433,7 @@ export const rejectL2 = async (req, res) => {
     const userId = req.user.userId;
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet found");
-    const isAuthorised = timesheet.relatedL2.some(
-      (id) => id.toString() === userId.toString(),
-    );
+    const isAuthorised = timesheet.mainL2.toString() === userId.toString();
     if (!isAuthorised)
       throw new BadRequestError("Not Authorised to do this operation");
     if (restrictL2.includes(timesheet.status))
@@ -462,9 +460,7 @@ export const approveL2 = async (req, res) => {
     const userId = req.user.userId;
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet found");
-    const isAuthorised = timesheet.relatedL2.some(
-      (id) => id.toString() === userId.toString(),
-    );
+    const isAuthorised = timesheet.mainL2.toString() === userId.toString();
     if (!isAuthorised)
       throw new BadRequestError("Not Authorised to do this operation");
     if (restrictL2.includes(timesheet.status))
@@ -494,9 +490,9 @@ export const modifyL2 = async (req, res) => {
     if (!timesheet) throw new NotFoundError("No timesheet found");
     if (restrictL2.includes(timesheet.status))
       throw new BadRequestError("This operation is not allowed at the moment");
-    const isAuthorized = timesheet.relatedL2.some(
-      (id) => id.toString() === userId.toString(),
-    );
+    const isAuthorized =
+      timesheet.relatedL2.some((id) => id.toString() === userId.toString()) ||
+      timesheet.mainL2.toString() === userId.toString();
     if (!isAuthorized)
       throw new BadRequestError("Not authorised to do this operation");
     await checkFor8Hour(timesheet.user, date, time, timesheet._id);
@@ -530,9 +526,9 @@ export const sendBacktoL1 = async (req, res) => {
     const { comment, job, date, time, description } = req.body;
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet found");
-    const isAuthorized = timesheet.relatedL2.some(
-      (id) => id.toString() === userId.toString(),
-    );
+    const isAuthorized =
+      timesheet.relatedL2.some((id) => id.toString() === userId.toString()) ||
+      timesheet.mainL2.toString() === userId.toString();
     if (!isAuthorized)
       throw new BadRequestError("Not authorised to do this operation");
     if (restrictL2.includes(timesheet.status))
