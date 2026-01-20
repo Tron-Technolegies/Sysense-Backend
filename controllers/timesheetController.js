@@ -465,15 +465,42 @@ export const approveL2 = async (req, res) => {
       throw new BadRequestError("Not Authorised to do this operation");
     if (restrictL2.includes(timesheet.status))
       throw new BadRequestError("This Operation is not Allowed at the moment");
-    const newStatus = {
-      date: new Date(),
-      status: "L3 Pending",
-      doneBy: userId,
-    };
-    timesheet.status = "L3 Pending";
-    timesheet.statusHistory.push(newStatus);
-    await timesheet.save();
-    res.status(200).json({ msg: "Data Approved", data: timesheet });
+
+    if (timesheet.l2Status && timesheet.l2Status.users) {
+      const alreadyApproved = timesheet.l2Status.users.some(
+        (id) => id.toString() === userId.toString(),
+      );
+      if (alreadyApproved)
+        throw new BadRequestError("User Already Approved this data");
+    }
+    const isRelatedL2 = timesheet.relatedL2?.some(
+      (id) => id.toString() === userId.toString(),
+    );
+    const isMainL2 = timesheet.mainL2?.toString() === userId.toString();
+
+    if (timesheet.l2Status.status) {
+      const newCompleted = timesheet.l2Status.completed + 1;
+      timesheet.l2Status.status = `${newCompleted}/${timesheet.l2Status.stages} L2 Approved`;
+      timesheet.l2Status.completed = newCompleted;
+      timesheet.l2Status.users.push(userId);
+    }
+
+    if (isRelatedL2) {
+      await timesheet.save();
+      return res.status(200).json({ msg: "Data Approved", data: timesheet });
+    }
+
+    if (isMainL2) {
+      const newStatus = {
+        date: new Date(),
+        status: "L3 Pending",
+        doneBy: userId,
+      };
+      timesheet.status = "L3 Pending";
+      timesheet.statusHistory.push(newStatus);
+      await timesheet.save();
+      res.status(200).json({ msg: "Data Approved", data: timesheet });
+    }
   } catch (error) {
     res
       .status(error.statusCode || 500)
@@ -491,10 +518,17 @@ export const modifyL2 = async (req, res) => {
     if (restrictL2.includes(timesheet.status))
       throw new BadRequestError("This operation is not allowed at the moment");
     const isAuthorized =
-      timesheet.relatedL2.some((id) => id.toString() === userId.toString()) ||
+      timesheet.relatedL2?.some((id) => id.toString() === userId.toString()) ||
       timesheet.mainL2.toString() === userId.toString();
     if (!isAuthorized)
       throw new BadRequestError("Not authorised to do this operation");
+    if (timesheet.l2Status && timesheet.l2Status.users) {
+      const alreadyApproved = timesheet.l2Status.users.some(
+        (id) => id.toString() === userId.toString(),
+      );
+      if (alreadyApproved)
+        throw new BadRequestError("User Already Approved this data");
+    }
     await checkFor8Hour(timesheet.user, date, time, timesheet._id);
 
     timesheet.job = job;
@@ -526,9 +560,7 @@ export const sendBacktoL1 = async (req, res) => {
     const { comment, job, date, time, description } = req.body;
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet found");
-    const isAuthorized =
-      timesheet.relatedL2.some((id) => id.toString() === userId.toString()) ||
-      timesheet.mainL2.toString() === userId.toString();
+    const isAuthorized = timesheet.mainL2.toString() === userId.toString();
     if (!isAuthorized)
       throw new BadRequestError("Not authorised to do this operation");
     if (restrictL2.includes(timesheet.status))
