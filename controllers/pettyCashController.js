@@ -434,17 +434,21 @@ export const modifyDataL2 = async (req, res) => {
     if (!pettyCash) throw new NotFoundError("No Petty cash data found");
     if (restrictL2.includes(pettyCash.status))
       throw new BadRequestError("This operation is not allowed at the moment");
+
     const isAuthorized =
-      pettyCash.relatedL2.some((id) => id.toString() === userId.toString()) ||
+      pettyCash.relatedL2?.some((id) => id.toString() === userId.toString()) ||
       pettyCash.mainL2?.toString() === userId.toString();
     if (!isAuthorized)
       throw new BadRequestError("Not authorised to do this operation");
 
-    const alreadyApproved = pettyCash.l2Status.users.some(
-      (id) => id.toString() === userId.toString(),
-    );
-    if (alreadyApproved)
-      throw new BadRequestError("User Already Approved this data");
+    if (pettyCash.l2Status && pettyCash.l2Status.users) {
+      const alreadyApproved = pettyCash.l2Status.users.some(
+        (id) => id.toString() === userId.toString(),
+      );
+      if (alreadyApproved)
+        throw new BadRequestError("User Already Approved this data");
+    }
+
     if (Number(amount) !== pettyCash.amount) {
       pettyCash.amountHistory.push({
         amount: Number(amount),
@@ -622,21 +626,25 @@ export const approveDataByL2 = async (req, res) => {
     if (restrictL2.includes(pettyCash.status))
       throw new BadRequestError("This Operation is not Allowed at the moment");
 
-    const alreadyApproved = pettyCash.l2Status.users.some(
-      (id) => id.toString() === userIdToString,
-    );
-    if (alreadyApproved)
-      throw new BadRequestError("User Already Approved this data");
+    if (pettyCash.l2Status && pettyCash.l2Status.users) {
+      const alreadyApproved = pettyCash.l2Status.users.some(
+        (id) => id.toString() === userIdToString,
+      );
+      if (alreadyApproved)
+        throw new BadRequestError("User Already Approved this data");
+    }
 
-    const isRelatedL2 = pettyCash.relatedL2.some(
+    const isRelatedL2 = pettyCash.relatedL2?.some(
       (id) => id.toString() === userIdToString,
     );
     const isMainL2 = pettyCash.mainL2?.toString() === userIdToString;
 
-    const newCompleted = pettyCash.l2Status.completed + 1;
-    pettyCash.l2Status.status = `${newCompleted}/${pettyCash.l2Status.stages} L2 Approved`;
-    pettyCash.l2Status.completed = newCompleted;
-    pettyCash.l2Status.users.push(userId);
+    if (pettyCash.l2Status.status) {
+      const newCompleted = pettyCash.l2Status.completed + 1;
+      pettyCash.l2Status.status = `${newCompleted}/${pettyCash.l2Status.stages} L2 Approved`;
+      pettyCash.l2Status.completed = newCompleted;
+      pettyCash.l2Status.users.push(userId);
+    }
 
     if (isRelatedL2) {
       await pettyCash.save();

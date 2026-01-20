@@ -392,18 +392,22 @@ export const modifyDataByL2 = async (req, res) => {
     if (!leave) throw new NotFoundError("No leave found");
     if (restrictL2.includes(leave.status))
       throw new BadRequestError("This operation is not allowed at  the moment");
-    const isAuthorized = leave.relatedL2.some(
+    const isAuthorized = leave.relatedL2?.some(
       (item) =>
         item.toString() === userId.toString() ||
         leave.mainL2.toString() === userId.toString(),
     );
     if (!isAuthorized)
       throw new UnauthorizedError("Not Authorized to do this operation");
-    const alreadyApproved = leave.l2Status.users.some(
-      (item) => item.toString() === userId.toString(),
-    );
-    if (alreadyApproved)
-      throw new BadRequestError("User already Approved this data");
+
+    if (leave.l2Status && leave.l2Status.users) {
+      const alreadyApproved = leave.l2Status.users.some(
+        (item) => item.toString() === userId.toString(),
+      );
+      if (alreadyApproved)
+        throw new BadRequestError("User already Approved this data");
+    }
+
     leave.startDate = new Date(startDate);
     leave.endDate = new Date(endDate);
     leave.leaveType = leaveType;
@@ -540,25 +544,33 @@ export const approveL2 = async (req, res) => {
     const leave = await Leave.findById(req.params.id);
     if (!leave) throw new NotFoundError("No leave found");
     const isAuthorized =
-      leave.relatedL2.some((id) => id.toString() === userId.toString()) ||
+      leave.relatedL2?.some((id) => id.toString() === userId.toString()) ||
       leave.mainL2.toString() === userId.toString();
     if (!isAuthorized)
       throw new UnauthorizedError("Not authorised to do this operation");
     if (restrictL2.includes(leave.status))
       throw new BadRequestError("This operation is not allowed at the moment");
-    const alreadyApproved = leave.l2Status.users.some(
-      (id) => id.toString() === userId.toString(),
-    );
-    if (alreadyApproved)
-      throw new BadRequestError("User already approved this data");
-    const isRelatedL2 = leave.relatedL2.some(
+
+    if (leave.l2Status && leave.l2Status.users) {
+      const alreadyApproved = leave.l2Status.users.some(
+        (id) => id.toString() === userId.toString(),
+      );
+      if (alreadyApproved)
+        throw new BadRequestError("User already approved this data");
+    }
+
+    const isRelatedL2 = leave.relatedL2?.some(
       (id) => id.toString() === userId.toString(),
     );
     const isMainL2 = leave.mainL2.toString() === userId.toString();
-    const newCompleted = leave.l2Status.completed + 1;
-    leave.l2Status.status = `${newCompleted}/${leave.l2Status.stages} L2 Approved`;
-    leave.l2Status.completed = newCompleted;
-    leave.l2Status.users.push(userId);
+
+    if (leave.l2Status && leave.l2Status.completed) {
+      const newCompleted = leave.l2Status.completed + 1;
+      leave.l2Status.status = `${newCompleted}/${leave.l2Status.stages} L2 Approved`;
+      leave.l2Status.completed = newCompleted;
+      leave.l2Status.users.push(userId);
+    }
+
     if (isRelatedL2) {
       await leave.save();
       return res.status(200).json({ msg: "Data Approved", data: leave });
