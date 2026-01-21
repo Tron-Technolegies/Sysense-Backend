@@ -478,7 +478,7 @@ export const approveL2 = async (req, res) => {
     );
     const isMainL2 = timesheet.mainL2?.toString() === userId.toString();
 
-    if (timesheet.l2Status.status) {
+    if (timesheet.l2Status && timesheet.l2Status.status) {
       const newCompleted = timesheet.l2Status.completed + 1;
       timesheet.l2Status.status = `${newCompleted}/${timesheet.l2Status.stages} L2 Approved`;
       timesheet.l2Status.completed = newCompleted;

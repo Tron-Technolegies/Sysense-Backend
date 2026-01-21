@@ -639,7 +639,7 @@ export const approveDataByL2 = async (req, res) => {
     );
     const isMainL2 = pettyCash.mainL2?.toString() === userIdToString;
 
-    if (pettyCash.l2Status.status) {
+    if (pettyCash.l2Status && pettyCash.l2Status.status) {
       const newCompleted = pettyCash.l2Status.completed + 1;
       pettyCash.l2Status.status = `${newCompleted}/${pettyCash.l2Status.stages} L2 Approved`;
       pettyCash.l2Status.completed = newCompleted;
