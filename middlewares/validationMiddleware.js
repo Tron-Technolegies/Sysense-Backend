@@ -243,3 +243,10 @@ export const validateAssignDefault = withValidationErrors([
 export const validateToggleMultiple = withValidationErrors([
   body("isMultiple").notEmpty().withMessage("Is Multiple is required"),
 ]);
+
+//roles
+export const validateAddRole = withValidationErrors([
+  body("roleName").notEmpty().withMessage("Role Name is required"),
+  body("level").notEmpty().withMessage("Role level is required"),
+  body("permissions").notEmpty().withMessage("Permissions is required"),
+]);

@@ -19,8 +19,12 @@ import userRouter from "./routers/userRouter.js";
 import reportRouter from "./routers/reportRouter.js";
 import adminRouter from "./routers/adminRouter.js";
 import defaultRouter from "./routers/defaultRouter.js";
+import roleRouter from "./routers/roleRouter.js";
 
-import { authenticateUser } from "./middlewares/authenticationMiddleware.js";
+import {
+  authenticateUser,
+  isAdmin,
+} from "./middlewares/authenticationMiddleware.js";
 import { getAllUsers } from "./controllers/userController.js";
 
 const app = express();
@@ -44,7 +48,7 @@ app.use(
     origin: "*", // Allow all origins
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  })
+  }),
 );
 
 // Optional: Pre-flight for all routes
@@ -71,6 +75,7 @@ app.use("/api/v1/user", authenticateUser, userRouter);
 app.use("/api/v1/report", authenticateUser, reportRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/defaults", authenticateUser, defaultRouter);
+app.use("/api/v1/role", authenticateUser, isAdmin, roleRouter);
 
 app.use("/*path", (req, res) => {
   res.status(404).json({ msg: "Not Found in server" });

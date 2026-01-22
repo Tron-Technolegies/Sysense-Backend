@@ -25,6 +25,20 @@ export const isAdmin = async (req, res, next) => {
     const user = await Admin.findById(req.user.userId);
     if (!user) throw new BadRequestError("No user found");
     if (!user.isAdmin) throw new UnauthorizedError("Not an Admin");
+    req.userObj = user;
+    next();
+  } catch (error) {
+    console.log(error);
+    throw Error;
+  }
+};
+
+export const isSuperAdmin = async (req, res, next) => {
+  try {
+    const user = req.userObj;
+    if (!user) throw new BadRequestError("No admin user found");
+    if (!user.isSuperAdmin)
+      throw new UnauthorizedError("Super Admin access needed ");
     next();
   } catch (error) {
     console.log(error);

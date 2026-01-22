@@ -6,8 +6,9 @@ const AdminSchema = new Schema(
     email: String,
     password: String,
     isAdmin: Boolean,
+    isSuperAdmin: Boolean,
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const Admin = model("Admin", AdminSchema);
