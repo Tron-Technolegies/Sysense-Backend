@@ -1,5 +1,6 @@
 import { NotFoundError } from "../errors/customErrors.js";
 import Role from "../models/Role.js";
+import User from "../models/User.js";
 
 export const addNewRole = async (req, res) => {
   try {
@@ -76,6 +77,23 @@ export const editRole = async (req, res) => {
     role.permissions = permissions;
     await role.save();
     res.status(200).json({ message: "success", role });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+export const assignRole = async (req, res) => {
+  const { userId, roleId } = req.body;
+  const user = await User.findById(userId);
+  if (!user) throw new NotFoundError("No user found");
+  const role = await Role.findById(roleId);
+  if (!role) throw new NotFoundError("No role found");
+  user.role = role._id;
+  await user.save();
+  res.status(200).json({ message: "Role assigned successfully" });
+  try {
   } catch (error) {
     res
       .status(error.statusCode || 500)

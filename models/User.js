@@ -44,7 +44,7 @@ const UserSchema = new Schema(
       ref: "User",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const User = model("User", UserSchema);

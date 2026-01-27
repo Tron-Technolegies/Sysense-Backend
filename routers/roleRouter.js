@@ -1,7 +1,11 @@
 import { Router } from "express";
-import { validateAddRole } from "../middlewares/validationMiddleware.js";
+import {
+  validateAddRole,
+  validateAssignRole,
+} from "../middlewares/validationMiddleware.js";
 import {
   addNewRole,
+  assignRole,
   editRole,
   getAllRoles,
   getRolesDropdown,
@@ -13,6 +17,7 @@ const router = Router();
 router.post("/", validateAddRole, addNewRole);
 router.get("/", getAllRoles);
 router.get("/dropdown", getRolesDropdown);
+router.patch("/assign", validateAssignRole, assignRole);
 router.get("/:id", getSingleRole);
 router.patch("/:id", validateAddRole, editRole);
 

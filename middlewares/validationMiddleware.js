@@ -250,3 +250,16 @@ export const validateAddRole = withValidationErrors([
   body("level").notEmpty().withMessage("Role level is required"),
   body("permissions").notEmpty().withMessage("Permissions is required"),
 ]);
+
+export const validateAssignRole = withValidationErrors([
+  body("userId")
+    .notEmpty()
+    .withMessage("User Id is required")
+    .isMongoId()
+    .withMessage("Invalid User Id"),
+  body("roleId")
+    .notEmpty()
+    .withMessage("Role Id is required")
+    .isMongoId()
+    .withMessage("Invalid Role Id"),
+]);
