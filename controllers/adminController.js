@@ -53,7 +53,7 @@ export const getAllUsers = async (req, res) => {
     const limit = 20;
     const skip = (page - 1) * limit;
     const users = await User.find(queryObject)
-      .sort({ createdAt: -1 })
+      .sort({ username: 1 })
       .skip(skip)
       .limit(limit);
     const totalUsers = await User.countDocuments(queryObject);
@@ -69,6 +69,7 @@ export const getAllUsers = async (req, res) => {
 export const getUserDropdowns = async (req, res) => {
   try {
     const users = await User.find({ isAdmin: { $ne: true } })
+      .sort({ username: 1 })
       .select("username employeeCode EmployeeId email")
       .lean();
     res.status(200).json(users);
@@ -94,7 +95,7 @@ export const getAllJobs = async (req, res) => {
     const limit = 20;
     const skip = (page - 1) * limit;
     const jobs = await Job.find(queryObject)
-      .sort({ createdAt: -1 })
+      .sort({ jobName: 1 })
       .skip(skip)
       .limit(limit);
     const totalJobs = await Job.countDocuments(queryObject);
