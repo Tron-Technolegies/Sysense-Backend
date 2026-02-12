@@ -45,14 +45,29 @@ if (process.env.NODE_ENV === "development") {
 
 app.use(
   cors({
-    origin: "*", // Allow all origins
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins = [
+        "https://syssensewebapp.netlify.app",
+        "https://syssenseadmin.netlify.app",
+        "https://api.syssense.it",
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://localhost",
+      ];
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(null, false);
+    },
+    credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   }),
 );
-
-// Optional: Pre-flight for all routes
-app.options("/*path", cors());
 
 app.get("/", (req, res) => {
   res.status(200).send("Welcome to Sysense Server");
