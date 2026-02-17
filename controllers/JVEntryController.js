@@ -3,8 +3,16 @@ import JVEntry from "../models/JVEntry.js";
 
 export const getAllJVEntry = async (req, res) => {
   try {
-    const items = await JVEntry.find();
-    if (items.length < 1) throw new NotFoundError("No JV Entries found");
+    const { search } = req.query;
+    const queryObject = {};
+    if (search && search !== "") {
+      queryObject.JVEntry = {
+        $regex: search,
+        $options: "i",
+      };
+    }
+    const items = await JVEntry.find(queryObject);
+
     res.status(200).json({ items });
   } catch (error) {
     res
