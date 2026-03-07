@@ -144,6 +144,7 @@ export const getDataForL1 = async (req, res) => {
 export const rejectDataL1 = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const { comment } = req.body;
     const pettycash = await PettyCash.findById(req.params.id);
     if (!pettycash) throw new NotFoundError("No pettycash data found");
     const isAuthorised = pettycash.relatedL1.some(
@@ -160,6 +161,14 @@ export const rejectDataL1 = async (req, res) => {
       doneBy: userId,
     };
     pettycash.statusHistory.push(newStatus);
+    if (comment) {
+      pettycash.currentComment = comment;
+      pettycash.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
+    }
     await pettycash.save();
     res.status(200).json({ msg: "Rejected", pettycash });
   } catch (error) {
@@ -320,7 +329,7 @@ export const modifyDataByL1 = async (req, res) => {
 export const approveDataByL1 = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { l2Users } = req.body;
+    const { l2Users, comment } = req.body;
     const pettyCash = await PettyCash.findById(req.params.id);
     if (!pettyCash) throw new NotFoundError("No petty cash data found");
     if (restrictL1.includes(pettyCash.status)) {
@@ -378,7 +387,14 @@ export const approveDataByL1 = async (req, res) => {
       status: "L2 Pending",
       doneBy: userId,
     });
-
+    if (comment) {
+      pettyCash.currentComment = comment;
+      pettyCash.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
+    }
     await pettyCash.save();
     res.status(200).json({ msg: "Data Approved", data: pettyCash });
   } catch (error) {
@@ -484,6 +500,7 @@ export const modifyDataL2 = async (req, res) => {
 export const rejectL2 = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const { comment } = req.body;
     const pettycash = await PettyCash.findById(req.params.id);
     if (!pettycash) throw new NotFoundError("No pettycash data found");
     const isAuthorised = pettycash.mainL2?.toString() === userId.toString();
@@ -498,6 +515,14 @@ export const rejectL2 = async (req, res) => {
       doneBy: userId,
     };
     pettycash.statusHistory.push(newStatus);
+    if (comment) {
+      pettycash.currentComment = comment;
+      pettycash.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
+    }
     await pettycash.save();
     res.status(200).json({ msg: "Rejected", pettycash });
   } catch (error) {
@@ -615,6 +640,7 @@ export const resubmitByL1 = async (req, res) => {
 export const approveDataByL2 = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const { comment } = req.body;
     const pettyCash = await PettyCash.findById(req.params.id);
     if (!pettyCash) throw new NotFoundError("No Pettycash  found");
     const userIdToString = userId.toString();
@@ -644,6 +670,15 @@ export const approveDataByL2 = async (req, res) => {
       pettyCash.l2Status.status = `${newCompleted}/${pettyCash.l2Status.stages} L2 Approved`;
       pettyCash.l2Status.completed = newCompleted;
       pettyCash.l2Status.users.push(userId);
+    }
+
+    if (comment) {
+      pettyCash.currentComment = comment;
+      pettyCash.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
     }
 
     if (isRelatedL2) {
@@ -711,6 +746,7 @@ export const getDataForL3 = async (req, res) => {
 export const rejectPettyCashByL3 = async (req, res) => {
   try {
     const { userId } = req.user;
+    const { comment } = req.body;
     const pettycash = await PettyCash.findById(req.params.id);
     if (!pettycash) throw new NotFoundError("No petty cash found");
     if (pettycash.status !== "L3 Pending")
@@ -728,6 +764,14 @@ export const rejectPettyCashByL3 = async (req, res) => {
       date: new Date(),
       doneBy: userId,
     });
+    if (comment) {
+      pettycash.currentComment = comment;
+      pettycash.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
+    }
     await pettycash.save();
     res.status(200).json({ message: "L3 Rejected" });
   } catch (error) {
@@ -740,6 +784,7 @@ export const rejectPettyCashByL3 = async (req, res) => {
 export const approveDataByL3 = async (req, res) => {
   try {
     const { userId } = req.user;
+    const { comment } = req.body;
     const pettycash = await PettyCash.findById(req.params.id);
     if (!pettycash) throw new NotFoundError("No petty cash found");
     if (pettycash.status !== "L3 Pending")
@@ -757,6 +802,14 @@ export const approveDataByL3 = async (req, res) => {
       date: new Date(),
       doneBy: userId,
     });
+    if (comment) {
+      pettycash.currentComment = comment;
+      pettycash.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
+    }
     await pettycash.save();
     res.status(200).json({ message: "Approved" });
   } catch (error) {

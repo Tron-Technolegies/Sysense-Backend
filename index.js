@@ -54,7 +54,7 @@ app.use(
         "https://api.syssense.it",
         "http://localhost:5173",
         "http://localhost:3000",
-        "http://localhost",
+        "http://local",
       ];
 
       if (allowedOrigins.includes(origin)) {

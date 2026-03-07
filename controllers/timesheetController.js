@@ -26,6 +26,7 @@ import {
   restrictL2,
 } from "../utils/utilityFunctions.js";
 import Default from "../models/Default.js";
+import Job from "../models/Job.js";
 
 //submitting the timesheet as L0 entry
 
@@ -75,10 +76,38 @@ export const submitTimeSheet = async (req, res) => {
 // get the user submitted timesheets as L0
 export const getUserSubmittedTimeSheet = async (req, res) => {
   try {
-    const { status, currentPage } = req.query;
+    const { status, currentPage, search, date } = req.query;
     const queryObject = { user: req.user.userId };
     if (status) {
       queryObject.status = { $regex: status, $options: "i" };
+    }
+    if (search) {
+      const users = await User.find({
+        username: { $regex: search, $options: "i" },
+      }).select("_id");
+
+      const jobs = await Job.find({
+        $or: [
+          { jobId: { $regex: search, $options: "i" } },
+          { jobName: { $regex: search, $options: "i" } },
+        ],
+      }).select("_id");
+
+      queryObject.$or = [
+        { user: { $in: users.map((u) => u._id) } },
+        { job: { $in: jobs.map((j) => j._id) } },
+      ];
+    }
+
+    // FILTER BY DATE
+    if (date) {
+      const start = new Date(date);
+      const end = new Date(date);
+
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+
+      queryObject.date = { $gte: start, $lte: end };
     }
     const page = Number(currentPage) || 1;
     const limit = 15;
@@ -92,7 +121,6 @@ export const getUserSubmittedTimeSheet = async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-    if (timesheets.length < 1) throw new NotFoundError("No timesheets found");
     const totalTimesheets = await TimeSheet.countDocuments(queryObject);
     const totalPages = Math.ceil(totalTimesheets / limit);
     res.status(200).json({ timesheets, totalPages });
@@ -160,9 +188,37 @@ export const getPendingActionL1 = async (req, res) => {
     const id = req.user.userId;
     const formattedId = new mongoose.Types.ObjectId(id);
     const queryObject = { relatedL1: formattedId };
-    const { status, currentPage } = req.query;
+    const { status, currentPage, search, date } = req.query;
     if (status) {
       queryObject.status = { $regex: status, $options: "i" };
+    }
+    if (search) {
+      const users = await User.find({
+        username: { $regex: search, $options: "i" },
+      }).select("_id");
+
+      const jobs = await Job.find({
+        $or: [
+          { jobId: { $regex: search, $options: "i" } },
+          { jobName: { $regex: search, $options: "i" } },
+        ],
+      }).select("_id");
+
+      queryObject.$or = [
+        { user: { $in: users.map((u) => u._id) } },
+        { job: { $in: jobs.map((j) => j._id) } },
+      ];
+    }
+
+    // FILTER BY DATE
+    if (date) {
+      const start = new Date(date);
+      const end = new Date(date);
+
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+
+      queryObject.date = { $gte: start, $lte: end };
     }
     const page = Number(currentPage) || 1;
     const limit = 15;
@@ -191,6 +247,7 @@ export const getPendingActionL1 = async (req, res) => {
 export const rejectTimeSheetL1 = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const { comment } = req.body;
     const formattedId = new mongoose.Types.ObjectId(userId);
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet has been found");
@@ -208,6 +265,14 @@ export const rejectTimeSheetL1 = async (req, res) => {
       doneBy: userId,
     };
     timesheet.statusHistory.push(newStatus);
+    if (comment) {
+      timesheet.currentComment = comment;
+      timesheet.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
+    }
     await timesheet.save();
     res.status(200).json({ msg: "Time sheet data has been rejected" });
   } catch (error) {
@@ -345,7 +410,7 @@ export const modifyTimesheetDataL1 = async (req, res) => {
 export const approveDatabyL1 = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { l2Users } = req.body;
+    const { l2Users, comment } = req.body;
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet found");
     if (restrictL1.includes(timesheet.status)) {
@@ -383,6 +448,14 @@ export const approveDatabyL1 = async (req, res) => {
     };
     timesheet.status = "L2 Pending";
     timesheet.statusHistory.push(newStatus);
+    if (comment) {
+      timesheet.currentComment = comment;
+      timesheet.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
+    }
     await timesheet.save();
     res.status(200).json({ msg: "Data Approved", data: timesheet });
   } catch (error) {
@@ -400,9 +473,37 @@ export const getDataforL2 = async (req, res) => {
     const queryObject = {
       $or: [{ relatedL2: formattedId }, { mainL2: formattedId }],
     };
-    const { status, currentPage } = req.query;
+    const { status, currentPage, search, date } = req.query;
     if (status) {
       queryObject.status = { $regex: status, $options: "i" };
+    }
+    if (search) {
+      const users = await User.find({
+        username: { $regex: search, $options: "i" },
+      }).select("_id");
+
+      const jobs = await Job.find({
+        $or: [
+          { jobId: { $regex: search, $options: "i" } },
+          { jobName: { $regex: search, $options: "i" } },
+        ],
+      }).select("_id");
+
+      queryObject.$or = [
+        { user: { $in: users.map((u) => u._id) } },
+        { job: { $in: jobs.map((j) => j._id) } },
+      ];
+    }
+
+    // FILTER BY DATE
+    if (date) {
+      const start = new Date(date);
+      const end = new Date(date);
+
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+
+      queryObject.date = { $gte: start, $lte: end };
     }
     const page = Number(currentPage) || 1;
     const limit = 15;
@@ -431,6 +532,7 @@ export const getDataforL2 = async (req, res) => {
 export const rejectL2 = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const { comment } = req.body;
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet found");
     const isAuthorised = timesheet.mainL2.toString() === userId.toString();
@@ -445,6 +547,14 @@ export const rejectL2 = async (req, res) => {
       doneBy: userId,
     };
     timesheet.statusHistory.push(newStatus);
+    if (comment) {
+      timesheet.currentComment = comment;
+      timesheet.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
+    }
     await timesheet.save();
     res.status(200).json({ msg: "Time sheet data has been rejected" });
   } catch (error) {
@@ -458,6 +568,7 @@ export const rejectL2 = async (req, res) => {
 export const approveL2 = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const { comment } = req.body;
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("No timesheet found");
     const isAuthorised = timesheet.mainL2.toString() === userId.toString();
@@ -483,6 +594,15 @@ export const approveL2 = async (req, res) => {
       timesheet.l2Status.status = `${newCompleted}/${timesheet.l2Status.stages} L2 Approved`;
       timesheet.l2Status.completed = newCompleted;
       timesheet.l2Status.users.push(userId);
+    }
+
+    if (comment) {
+      timesheet.currentComment = comment;
+      timesheet.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
     }
 
     if (isRelatedL2) {
@@ -654,9 +774,37 @@ export const getDataForL3 = async (req, res) => {
     if (defaultSettings.defaultTimeSheetL3.toString() !== id.toString())
       throw new NotFoundError("Invalid L3 User");
     const queryObject = {};
-    const { status, currentPage } = req.query;
+    const { status, currentPage, search, date } = req.query;
     if (status & (status !== "ALL")) {
       queryObject.status = { $regex: status, $options: "i" };
+    }
+    if (search) {
+      const users = await User.find({
+        username: { $regex: search, $options: "i" },
+      }).select("_id");
+
+      const jobs = await Job.find({
+        $or: [
+          { jobId: { $regex: search, $options: "i" } },
+          { jobName: { $regex: search, $options: "i" } },
+        ],
+      }).select("_id");
+
+      queryObject.$or = [
+        { user: { $in: users.map((u) => u._id) } },
+        { job: { $in: jobs.map((j) => j._id) } },
+      ];
+    }
+
+    // FILTER BY DATE
+    if (date) {
+      const start = new Date(date);
+      const end = new Date(date);
+
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+
+      queryObject.date = { $gte: start, $lte: end };
     }
     const page = Number(currentPage);
     const limit = 15;
@@ -683,6 +831,7 @@ export const getDataForL3 = async (req, res) => {
 export const rejectTimeSheetByL3 = async (req, res) => {
   try {
     const { userId } = req.user;
+    const { comment } = req.body;
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("NO Timesheet found");
     if (timesheet.status !== "L3 Pending")
@@ -700,6 +849,14 @@ export const rejectTimeSheetByL3 = async (req, res) => {
       date: new Date(),
       doneBy: userId,
     });
+    if (comment) {
+      timesheet.currentComment = comment;
+      timesheet.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
+    }
     await timesheet.save();
     res.status(200).json({ message: "L3 Rejected" });
   } catch (error) {
@@ -712,6 +869,7 @@ export const rejectTimeSheetByL3 = async (req, res) => {
 export const approveTimeSheetL3 = async (req, res) => {
   try {
     const { userId } = req.user;
+    const { comment } = req.body;
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("NO Timesheet found");
     if (timesheet.status !== "L3 Pending")
@@ -729,6 +887,14 @@ export const approveTimeSheetL3 = async (req, res) => {
       date: new Date(),
       doneBy: userId,
     });
+    if (comment) {
+      timesheet.currentComment = comment;
+      timesheet.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
+    }
     await timesheet.save();
     res.status(200).json({ message: "L3 Approved" });
   } catch (error) {

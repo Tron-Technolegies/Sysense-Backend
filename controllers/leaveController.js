@@ -135,6 +135,7 @@ export const getDataForL1 = async (req, res) => {
 export const rejectDataByL1 = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const { comment } = req.body;
     const leave = await Leave.findById(req.params.id);
     if (!leave) throw new NotFoundError("No leave found");
     const isAuthorised = leave.relatedL1.some(
@@ -151,6 +152,14 @@ export const rejectDataByL1 = async (req, res) => {
       doneBy: userId,
     };
     leave.statusHistory.push(newStatus);
+    if (comment) {
+      leave.currentComment = comment;
+      leave.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
+    }
     await leave.save();
     res.status(200).json({ msg: "Rejected", leave });
   } catch (error) {
@@ -278,7 +287,7 @@ export const modifyDataByL1 = async (req, res) => {
 export const approveL1 = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { l2Users } = req.body;
+    const { l2Users, comment } = req.body;
     const leave = await Leave.findById(req.params.id);
     if (!leave) throw new NotFoundError("No leave found");
     const isAuthorized = leave.relatedL1.some(
@@ -328,7 +337,14 @@ export const approveL1 = async (req, res) => {
       date: new Date(),
       doneBy: userId,
     });
-
+    if (comment) {
+      leave.currentComment = comment;
+      leave.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
+    }
     await leave.save();
     res.status(200).json({ msg: "Data Approved", data: leave });
   } catch (error) {
@@ -433,6 +449,7 @@ export const modifyDataByL2 = async (req, res) => {
 export const rejectByL2 = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const { comment } = req.body;
     const leave = await Leave.findById(req.params.id);
     if (!leave) throw new NotFoundError("No Leave found");
     const isAuthorized = leave.mainL2.toString() === userId.toString();
@@ -446,6 +463,14 @@ export const rejectByL2 = async (req, res) => {
       date: new Date(),
       doneBy: userId,
     });
+    if (comment) {
+      leave.currentComment = comment;
+      leave.commentHistory.push({
+        date: new Date(),
+        comment: comment,
+        commentedBy: userId,
+      });
+    }
     await leave.save();
     res.status(200).json({ msg: "Rejected", leave });
   } catch (error) {
@@ -541,6 +566,7 @@ export const resubmitByL1 = async (req, res) => {
 export const approveL2 = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const { comment } = req.body;
     const leave = await Leave.findById(req.params.id);
     if (!leave) throw new NotFoundError("No leave found");
     const isAuthorized =
@@ -569,6 +595,15 @@ export const approveL2 = async (req, res) => {
       leave.l2Status.status = `${newCompleted}/${leave.l2Status.stages} L2 Approved`;
       leave.l2Status.completed = newCompleted;
       leave.l2Status.users.push(userId);
+    }
+
+    if (comment) {
+      leave.currentComment = comment;
+      leave.commentHistory.push({
+        comment: comment,
+        date: new Date(),
+        commentedBy: userId,
+      });
     }
 
     if (isRelatedL2) {
@@ -687,6 +722,7 @@ export const getDataForL3 = async (req, res) => {
 export const rejectLeaveByL3 = async (req, res) => {
   try {
     const { userId } = req.user;
+    const { comment } = req.body;
     const leave = await Leave.findById(req.params.id);
     if (!leave) throw new NotFoundError("NO leave found");
     if (leave.status !== "L3 Pending")
@@ -704,6 +740,14 @@ export const rejectLeaveByL3 = async (req, res) => {
       date: new Date(),
       doneBy: userId,
     });
+    if (comment) {
+      leave.currentComment = comment;
+      leave.commentHistory.push({
+        comment: comment,
+        date: new Date(),
+        commentedBy: userId,
+      });
+    }
     await leave.save();
     res.status(200).json({ message: "L3 Rejected" });
   } catch (error) {
@@ -716,6 +760,7 @@ export const rejectLeaveByL3 = async (req, res) => {
 export const approveLeaveByL3 = async (req, res) => {
   try {
     const { userId } = req.user;
+    const { comment } = req.body;
     const leave = await Leave.findById(req.params.id);
     if (!leave) throw new NotFoundError("NO leave found");
     if (leave.status !== "L3 Pending")
@@ -733,6 +778,14 @@ export const approveLeaveByL3 = async (req, res) => {
       date: new Date(),
       doneBy: userId,
     });
+    if (comment) {
+      leave.currentComment = comment;
+      leave.commentHistory.push({
+        comment: comment,
+        date: new Date(),
+        commentedBy: userId,
+      });
+    }
     await leave.save();
     res.status(200).json({ message: "Approved" });
   } catch (error) {
