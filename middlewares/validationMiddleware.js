@@ -151,6 +151,12 @@ export const validateGenerateReportByUser = withValidationErrors([
   body("endDate").notEmpty().withMessage("End Date is required"),
 ]);
 
+export const validateGenerateScopedReport = withValidationErrors([
+  body("module").notEmpty().withMessage("Module is missing"),
+  body("startDate").notEmpty().withMessage("Start Date is required"),
+  body("endDate").notEmpty().withMessage("End Date is required"),
+]);
+
 //Admin Routes
 
 export const validateAddUser = withValidationErrors([

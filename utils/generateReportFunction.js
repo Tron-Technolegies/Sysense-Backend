@@ -19,7 +19,7 @@ export const generateReportByUser = async (data, res) => {
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader(
     "Content-Disposition",
-    "attachment; filename=employee-report.pdf"
+    "attachment; filename=employee-report.pdf",
   );
   doc.pipe(res);
   //Title
@@ -55,11 +55,24 @@ export const generateReportByUser = async (data, res) => {
     startSection(doc, "TimeSheet Details");
 
     const timeSheetTable = {
-      headers: ["Date", "Job", "Time Worked", "status"],
+      headers: [
+        "Name",
+        "Employee No",
+        "Date of Submission",
+        "Job",
+        "Time Worked",
+        "Comment",
+        "Status",
+      ],
       rows: data?.timesheets?.map((x) => [
-        new Date(x.date).toLocaleDateString(),
+        x.user?.username,
+        x.user?.employeeCode,
+        new Date(x.createdAt).toLocaleDateString(),
         x.job?.jobName,
         x.timeWorked,
+        x.commentHistory && x.commentHistory.length > 0
+          ? x.commentHistory.map((item) => `• ${item.comment}`).join("\n")
+          : "-",
         x.status,
       ]),
     };
@@ -76,11 +89,24 @@ export const generateReportByUser = async (data, res) => {
     startSection(doc, "PettyCash Details");
 
     const pettyCashTable = {
-      headers: ["Date", "Job", "Amount", "status"],
+      headers: [
+        "Name",
+        "Employee No",
+        "Date of Submission",
+        "Amount",
+        "JV Account",
+        "Comment",
+        "Status",
+      ],
       rows: data?.pettyCash?.map((x) => [
+        x.user?.username,
+        x.user?.employeeCode,
         new Date(x.date).toLocaleDateString(),
-        x.job.jobName,
         x.amount,
+        x.JVEntry || "-", // ensure field exists
+        x.commentHistory && x.commentHistory.length > 0
+          ? x.commentHistory.map((item) => `• ${item.comment}`).join("\n")
+          : "-",
         x.status,
       ]),
     };
@@ -99,6 +125,8 @@ export const generateReportByUser = async (data, res) => {
 
     const leaveTable = {
       headers: [
+        "Name",
+        "Employee No",
         "Applied On",
         "Start Date",
         "End Date",
@@ -107,6 +135,8 @@ export const generateReportByUser = async (data, res) => {
         "Status",
       ],
       rows: data?.leaves?.map((x) => [
+        x.user?.username,
+        x.user?.employeeCode,
         new Date(x.createdAt).toLocaleDateString(),
         new Date(x.startDate).toLocaleDateString(),
         new Date(x.endDate).toLocaleDateString(),

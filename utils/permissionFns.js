@@ -14,12 +14,12 @@ export const canPerformAction = async (actorId, targetId, module, action) => {
     const role = actor.role;
     //finding module permissions
     const modulePermission = role?.permissions?.find(
-      (item) => item.module === module
+      (item) => item.module === module,
     );
     if (!modulePermission) return false;
     //find if he has the particular action permission
     const actionPermission = modulePermission?.actions?.find(
-      (item) => item.name === action
+      (item) => item.name === action,
     );
     if (!actionPermission) return false;
     const scope = actionPermission.scope;
@@ -56,11 +56,11 @@ export const buildScopeQuery = async (actorId, module, action) => {
     if (!actor.role) return null;
     const role = actor.role;
     const modulePermission = role?.permissions?.find(
-      (item) => item.module === module
+      (item) => item.module === module,
     );
     if (!modulePermission) return null;
     const actionPermission = modulePermission?.actions?.find(
-      (item) => item.name === action
+      (item) => item.name === action,
     );
     if (!actionPermission) return null;
     const scope = actionPermission.scope;
@@ -77,13 +77,16 @@ export const buildScopeQuery = async (actorId, module, action) => {
         if (!actorManager) return { manager: actor._id };
         const siblingsLead = await User.find(
           { manager: actorManager },
-          { _id: 1 }
+          { _id: 1 },
         ).lean();
         const allowedManagers = siblingsLead.map((item) => item._id);
         allowedManagers.push(actor._id);
         return { manager: { $in: allowedManagers } };
       case "sameLevel":
-        return { "role.level": actor.role.level };
+        const sameLevelRoles = await Role.find({
+          level: actor.role.level,
+        }).select("_id");
+        return { role: { $in: sameLevelRoles.map((r) => r._id) } };
       default:
         return { _id: actor._id };
     }
