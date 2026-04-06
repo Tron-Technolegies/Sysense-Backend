@@ -3,7 +3,10 @@ import Leave from "../models/Leave.js";
 import PettyCash from "../models/PettyCash.js";
 import TimeSheet from "../models/TimeSheet.js";
 import User from "../models/User.js";
-import { generateReportByUser } from "../utils/generateReportFunction.js";
+import {
+  generateExcelReport,
+  generateReportByUser,
+} from "../utils/generateReportFunction.js";
 import { buildScopeQuery } from "../utils/permissionFns.js";
 
 export const generateUserReport = async (req, res) => {
@@ -158,7 +161,109 @@ export const generateScopedReport = async (req, res) => {
     // 🔹 Step 5: Generate PDF
     return generateReportByUser(data, res);
   } catch (error) {
-    console.log("generateScopedReport error:", error);
+    res.status(500).json({ msg: "Failed to generate report" });
+  }
+};
+
+export const generateUserReportExcel = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { isTimesheet, isPettyCash, isLeave, startDate, endDate } = req.body;
+    const user = await User.findById(userId)
+      .select("username employeeCode role manager")
+      .lean();
+    if (!user) throw new NotFoundError("No user found");
+    let data = {
+      employeeName: user.username,
+      from: new Date(startDate).toLocaleDateString(),
+      to: new Date(endDate).toLocaleDateString(),
+      timesheets: [],
+      pettyCash: [],
+      leaves: [],
+    };
+    const queryObject = { user: userId };
+    if (startDate || endDate) queryObject.createdAt = {};
+    if (startDate) queryObject.createdAt.$gte = new Date(startDate);
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      queryObject.createdAt.$lte = end;
+    }
+    if (isTimesheet) {
+      const timesheets = await TimeSheet.find(queryObject)
+        .populate("job", "jobName")
+        .populate("user", "username employeeCode")
+        .lean();
+      data.timesheets = timesheets;
+    }
+    if (isPettyCash) {
+      const pettyCash = await PettyCash.find(queryObject)
+        .populate("job", "jobName")
+        .populate("user", "username employeeCode")
+        .lean();
+      data.pettyCash = pettyCash;
+    }
+    if (isLeave) {
+      const leaves = await Leave.find(queryObject)
+        .populate("user", "username employeeCode")
+        .lean();
+      data.leaves = leaves;
+    }
+    return generateExcelReport(data, res);
+  } catch (error) {
+    res.status(500).json({ msg: "Failed to generate report" });
+  }
+};
+
+export const generateScopedReportExcel = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { module, startDate, endDate } = req.body;
+    const scopeQuery = await buildScopeQuery(userId, module, "read");
+    const users = await User.find(scopeQuery).select("_id").lean();
+    const userIds = users.map((u) => u._id);
+
+    const queryObject = { user: { $in: userIds } };
+    if (startDate || endDate) queryObject.createdAt = {};
+
+    if (startDate) queryObject.createdAt.$gte = new Date(startDate);
+
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      queryObject.createdAt.$lte = end;
+    }
+
+    let data = {
+      employeeName: "Scoped Report",
+      from: startDate || "N/A",
+      to: endDate || "N/A",
+      timesheets: [],
+      pettyCash: [],
+      leaves: [],
+    };
+    if (module === "timesheet") {
+      data.timesheets = await TimeSheet.find(queryObject)
+        .populate("job", "jobName")
+        .populate("user", "username employeeCode")
+        .lean();
+    }
+
+    if (module === "pettycash") {
+      data.pettyCash = await PettyCash.find(queryObject)
+        .populate("job", "jobName")
+        .populate("user", "username employeeCode")
+        .lean();
+    }
+
+    if (module === "leave") {
+      data.leaves = await Leave.find(queryObject)
+        .populate("user", "username employeeCode")
+        .lean();
+    }
+
+    return generateExcelReport(data, res);
+  } catch (error) {
     res.status(500).json({ msg: "Failed to generate report" });
   }
 };

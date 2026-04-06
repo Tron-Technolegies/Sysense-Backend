@@ -1,5 +1,6 @@
 import PDFDocument from "pdfkit";
 import PDFTable from "pdfkit-table";
+import ExcelJS from "exceljs";
 
 const startSection = (doc, title) => {
   const safeBottom = doc.page.height - doc.page.margins.bottom - 120;
@@ -150,4 +151,103 @@ export const generateReportByUser = async (data, res) => {
     doc.moveDown(2);
   }
   doc.end();
+};
+
+const styleHeader = (row) => {
+  row.font = { bold: true };
+  row.alignment = { vertical: "middle", horizontal: "center" };
+};
+
+export const generateExcelReport = async (data, res) => {
+  const workbook = new ExcelJS.Workbook();
+
+  if (data.timesheets?.length > 0) {
+    const sheet = workbook.addWorksheet("Timesheets");
+    sheet.columns = [
+      { header: "Name", key: "name", width: 20 },
+      { header: "Employee No", key: "employeeNo", width: 20 },
+      { header: "Date", key: "date", width: 20 },
+      { header: "Job", key: "job", width: 25 },
+      { header: "Time Worked", key: "timeWorked", width: 15 },
+      { header: "Comment", key: "comment", width: 40 },
+      { header: "Status", key: "status", width: 15 },
+    ];
+    styleHeader(sheet.getRow(1));
+    data.timesheets.forEach((x) => {
+      sheet.addRow({
+        name: x.user?.username,
+        employeeNo: x.user?.employeeCode,
+        date: new Date(x.createdAt).toLocaleDateString(),
+        job: x.job?.jobName,
+        timeWorked: x.timeWorked,
+        comment: x.commentHistory?.map((c) => c.comment).join(" | ") || "-",
+        status: x.status,
+      });
+    });
+  }
+
+  if (data.pettyCash?.length > 0) {
+    const sheet = workbook.addWorksheet("PettyCash");
+
+    sheet.columns = [
+      { header: "Name", key: "name", width: 20 },
+      { header: "Employee No", key: "employeeNo", width: 20 },
+      { header: "Date", key: "date", width: 20 },
+      { header: "Amount", key: "amount", width: 15 },
+      { header: "JV Account", key: "jv", width: 20 },
+      { header: "Comment", key: "comment", width: 40 },
+      { header: "Status", key: "status", width: 15 },
+    ];
+
+    styleHeader(sheet.getRow(1));
+
+    data.pettyCash.forEach((x) => {
+      sheet.addRow({
+        name: x.user?.username,
+        employeeNo: x.user?.employeeCode,
+        date: new Date(x.date).toLocaleDateString(),
+        amount: x.amount,
+        jv: x.JVEntry || "-",
+        comment: x.commentHistory?.map((c) => c.comment).join(" | ") || "-",
+        status: x.status,
+      });
+    });
+  }
+
+  if (data.leaves?.length > 0) {
+    const sheet = workbook.addWorksheet("Leaves");
+
+    sheet.columns = [
+      { header: "Name", key: "name", width: 20 },
+      { header: "Employee No", key: "employeeNo", width: 20 },
+      { header: "Applied On", key: "applied", width: 20 },
+      { header: "Start Date", key: "start", width: 20 },
+      { header: "End Date", key: "end", width: 20 },
+      { header: "Leave Type", key: "type", width: 20 },
+      { header: "Reason", key: "reason", width: 30 },
+      { header: "Status", key: "status", width: 15 },
+    ];
+
+    styleHeader(sheet.getRow(1));
+
+    data.leaves.forEach((x) => {
+      sheet.addRow({
+        name: x.user?.username,
+        employeeNo: x.user?.employeeCode,
+        applied: new Date(x.createdAt).toLocaleDateString(),
+        start: new Date(x.startDate).toLocaleDateString(),
+        end: new Date(x.endDate).toLocaleDateString(),
+        type: x.leaveType,
+        reason: x.reason,
+        status: x.status,
+      });
+    });
+  }
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  res.setHeader("Content-Disposition", "attachment; filename=report.xlsx");
+  await workbook.xlsx.write(res);
+  res.end();
 };
