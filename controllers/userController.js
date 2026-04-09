@@ -48,12 +48,14 @@ export const updatePassword = async (req, res) => {
 
 export const getUserInfo = async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId).select({
-      username: 1,
-      email: 1,
-      employeeCode: 1,
-      role: 1,
-    });
+    const user = await User.findById(req.user.userId)
+      .select({
+        username: 1,
+        email: 1,
+        employeeCode: 1,
+        role: 1,
+      })
+      .populate("role");
     if (!user) throw new NotFoundError("No user has been found");
     res.status(200).json(user);
   } catch (error) {
