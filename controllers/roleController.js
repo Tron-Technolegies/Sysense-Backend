@@ -100,3 +100,17 @@ export const assignRole = async (req, res) => {
       .json({ error: error.msg || error.message });
   }
 };
+
+export const getUserRoles = async (req, res) => {
+  try {
+    const users = await User.find({ role: { $exists: true } })
+      .select("role employeeCode EmployeeId username")
+      .populate("role")
+      .lean();
+    res.status(200).json(users);
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};

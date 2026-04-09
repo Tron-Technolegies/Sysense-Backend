@@ -53,6 +53,7 @@ export const getAllUsers = async (req, res) => {
     const limit = 20;
     const skip = (page - 1) * limit;
     const users = await User.find(queryObject)
+      .populate("role", "roleName")
       .sort({ username: 1 })
       .skip(skip)
       .limit(limit);
