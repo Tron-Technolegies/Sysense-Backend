@@ -45,6 +45,7 @@ export const submitTimeSheet = async (req, res) => {
     //   .lean();
     // const L1Id = L1User._id;
     const L1Id = await findTimeSheetL1(job);
+    if (!L1Id) throw new BadRequestError("No L1 found for this data");
     const newTimeSheet = new TimeSheet({
       user: req.user.userId,
       job: job,
@@ -428,6 +429,7 @@ export const approveDatabyL1 = async (req, res) => {
     //   .select("_id")
     //   .lean();
     const L2Id = await findTimeSheetL2(timesheet.user);
+    if (!L2Id) throw new BadRequestError("Unable to find L2 for this data");
     timesheet.mainL2 = L2Id;
     const defaultSettings = await Default.findOne();
     if (defaultSettings.timeSheetMultipleL2) {

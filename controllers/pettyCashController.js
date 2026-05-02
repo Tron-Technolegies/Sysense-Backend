@@ -56,6 +56,7 @@ export const submitPettyCash = async (req, res) => {
     //   .select("_id")
     //   .lean();
     const L1Id = await findPettyCashL1(req.user.userId);
+    if (!L1Id) throw new NotFoundError("No L1 found for this data");
     newPettyCashData.relatedL1.push(L1Id);
     newPettyCashData.statusHistory.push(newStatus);
     if (comment) {
@@ -366,6 +367,7 @@ export const approveDataByL1 = async (req, res) => {
     //   pettyCash.relatedL2.push(...validL2Ids.slice(1));
     // }
     const mainL2 = await findPettyCashL2(pettyCash.job);
+    if (!mainL2) throw new BadRequestError("No L2 found for this data");
     pettyCash.mainL2 = mainL2;
 
     const defaultSettings = await Default.findOne();

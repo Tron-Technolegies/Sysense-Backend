@@ -32,29 +32,32 @@ export const findTimeSheetL1 = async (jobId) => {
     return user._id;
   } else {
     const defaultSettings = await Default.findOne();
-    if (!defaultSettings) throw new BadRequestError("No user found");
+    if (!defaultSettings || !defaultSettings.defaultTimeSheetL1)
+      throw new BadRequestError("No user found");
     return defaultSettings.defaultTimeSheetL1;
   }
 };
 
 export const findTimeSheetL2 = async (userId) => {
   const user = await User.findById(userId);
-  if (user) {
+  if (user && user.manager) {
     return user.manager;
   } else {
     const defaultSettings = await Default.findOne();
-    if (!defaultSettings) throw new BadRequestError("No user found");
+    if (!defaultSettings || !defaultSettings.defaultTimeSheetL2)
+      throw new BadRequestError("No user found");
     return defaultSettings.defaultTimeSheetL2;
   }
 };
 
 export const findPettyCashL1 = async (userId) => {
   const user = await User.findById(userId);
-  if (user) {
+  if (user && user.manager) {
     return user.manager;
   } else {
     const defaultSettings = await Default.findOne();
-    if (!defaultSettings) throw new BadRequestError("No user found");
+    if (!defaultSettings || !defaultSettings.defaultPettyCashL1)
+      throw new BadRequestError("No user found");
     return defaultSettings.defaultPettyCashL1;
   }
 };
@@ -69,29 +72,32 @@ export const findPettyCashL2 = async (jobId) => {
     return user._id;
   } else {
     const defaultSettings = await Default.findOne();
-    if (!defaultSettings) throw new BadRequestError("No user found");
+    if (!defaultSettings || !defaultSettings.defaultPettyCashL2)
+      throw new BadRequestError("No user found");
     return defaultSettings.defaultPettyCashL2;
   }
 };
 
 export const findLeaveL1 = async (userId) => {
   const user = await User.findById(userId);
-  if (user) {
+  if (user && user.manager) {
     return user.manager;
   } else {
     const defaultSettings = await Default.findOne();
-    if (!defaultSettings) throw new BadRequestError("No user found");
+    if (!defaultSettings || !defaultSettings.defaultLeaveL1)
+      throw new BadRequestError("No user found");
     return defaultSettings.defaultLeaveL1;
   }
 };
 
 export const findLeaveL2 = async (userId) => {
   const user = await User.findById(userId);
-  if (user) {
+  if (user && user.manager) {
     return user.manager;
   } else {
     const defaultSettings = await Default.findOne();
-    if (!defaultSettings) throw new BadRequestError("No user found");
+    if (!defaultSettings || !defaultSettings.defaultLeaveL2)
+      throw new BadRequestError("No user found");
     return defaultSettings.defaultLeaveL2;
   }
 };

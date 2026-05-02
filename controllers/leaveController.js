@@ -60,6 +60,7 @@ export const applyLeave = async (req, res) => {
     //   .select("_id")
     //   .lean();
     const L1Id = await findLeaveL1(req.user.userId);
+    if (!L1Id) throw new BadRequestError("No L1 found for this data");
     newLeave.statusHistory.push(newStatus);
     newLeave.relatedL1.push(L1Id);
     await newLeave.save();
@@ -317,6 +318,7 @@ export const approveL1 = async (req, res) => {
     //   leave.relatedL2.push(...validL2Ids.slice(1));
     // }
     const mainL2 = await findLeaveL2(leave.relatedL1[0]);
+    if (!mainL2) throw new NotFoundError("No L2 found for this data");
     leave.mainL2 = mainL2;
     const defaultSettings = await Default.findOne();
     if (defaultSettings?.leaveMultipleL2) {
