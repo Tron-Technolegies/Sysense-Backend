@@ -69,7 +69,18 @@ export const getAllUsers = async (req, res) => {
 
 export const getUserDropdowns = async (req, res) => {
   try {
-    const users = await User.find({ isAdmin: { $ne: true } })
+    const { search } = req.query;
+    const queryObject = { isAdmin: { $ne: true } };
+    if (search && search !== "") {
+      const searchRegex = new RegExp(search, "i");
+      queryObject.$or = [
+        { username: searchRegex },
+        { employeeCode: searchRegex },
+        { EmployeeId: searchRegex },
+        { email: searchRegex },
+      ];
+    }
+    const users = await User.find(queryObject)
       .sort({ username: 1 })
       .select("username employeeCode EmployeeId email")
       .lean();

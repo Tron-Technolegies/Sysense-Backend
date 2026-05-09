@@ -20,6 +20,7 @@ import {
 import User from "../models/User.js";
 import mongoose from "mongoose";
 import {
+  checkDuplicateJobTimeSheet,
   checkFor8Hour,
   restrictL0,
   restrictL1,
@@ -34,6 +35,7 @@ export const submitTimeSheet = async (req, res) => {
   try {
     const { job, date, time, description, comment } = req.body;
     await checkFor8Hour(req.user.userId, date, time);
+    await checkDuplicateJobTimeSheet(req.user.userId, job, date);
     const newStatus = {
       date: new Date(),
       status: "L1 Pending",

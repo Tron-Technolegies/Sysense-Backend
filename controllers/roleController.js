@@ -45,7 +45,12 @@ export const getAllRoles = async (req, res) => {
 
 export const getRolesDropdown = async (req, res) => {
   try {
-    const roles = await Role.find().select("roleName level").lean();
+    const { search } = req.query;
+    const queryObject = {};
+    if (search && search !== "") {
+      queryObject.$or = [{ roleName: { $regex: search, $options: "i" } }];
+    }
+    const roles = await Role.find(queryObject).select("roleName level").lean();
     res.status(200).json(roles);
   } catch (error) {
     res
@@ -103,7 +108,9 @@ export const assignRole = async (req, res) => {
 
 export const getUserRoles = async (req, res) => {
   try {
-    const users = await User.find({ role: { $exists: true } })
+    const { search } = req.query;
+    const queryObject = { role: { $exists: true } };
+    const users = await User.find(queryObject)
       .select("role employeeCode EmployeeId username")
       .populate("role")
       .lean();
