@@ -131,6 +131,9 @@ export const generateScopedReport = async (req, res) => {
         .select("job date timeWorked status user createdAt commentHistory")
         .populate("job", "jobName")
         .populate("user", "username employeeCode")
+        .populate("relatedL1", "username")
+        .populate("relatedL2", "username")
+        .populate("mainL2", "username")
         .lean();
 
       data.timesheets = timeSheets;
@@ -142,6 +145,9 @@ export const generateScopedReport = async (req, res) => {
         .select("job date amount status user JVEntry commentHistory")
         .populate("job", "jobName")
         .populate("user", "username employeeCode")
+        .populate("relatedL1", "username")
+        .populate("relatedL2", "username")
+        .populate("mainL2", "username")
         .lean();
 
       data.pettyCash = pettyCash;
@@ -152,6 +158,9 @@ export const generateScopedReport = async (req, res) => {
       const leaves = await Leave.find(queryObject)
         .select("user createdAt startDate endDate leaveType reason status")
         .populate("user", "username employeeCode")
+        .populate("relatedL1", "username")
+        .populate("relatedL2", "username")
+        .populate("mainL2", "username")
         .lean();
 
       data.leaves = leaves;
@@ -246,6 +255,9 @@ export const generateScopedReportExcel = async (req, res) => {
       data.timesheets = await TimeSheet.find(queryObject)
         .populate("job", "jobName")
         .populate("user", "username employeeCode")
+        .populate("relatedL1", "username")
+        .populate("relatedL2", "username")
+        .populate("mainL2", "username")
         .lean();
     }
 
@@ -253,6 +265,9 @@ export const generateScopedReportExcel = async (req, res) => {
       data.pettyCash = await PettyCash.find(queryObject)
         .populate("job", "jobName")
         .populate("user", "username employeeCode")
+        .populate("relatedL1", "username")
+        .populate("relatedL2", "username")
+        .populate("mainL2", "username")
         .lean();
     }
 

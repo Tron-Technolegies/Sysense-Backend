@@ -64,6 +64,9 @@ export const generateReportByUser = async (data, res) => {
         "Time Worked",
         "Comment",
         "Status",
+        "L1",
+        "Main L2",
+        "Sub L2",
       ],
       rows: data?.timesheets?.map((x) => [
         x.user?.username,
@@ -75,6 +78,9 @@ export const generateReportByUser = async (data, res) => {
           ? x.commentHistory.map((item) => `• ${item.comment}`).join("\n")
           : "-",
         x.status,
+        x.relatedL1?.[0].username,
+        x.mainL2?.username,
+        x.relatedL2 && x.relatedL2?.map((item) => item?.username)?.join(", "),
       ]),
     };
     await doc.table(timeSheetTable, {
@@ -98,6 +104,9 @@ export const generateReportByUser = async (data, res) => {
         "JV Account",
         "Comment",
         "Status",
+        "L1",
+        "Main L2",
+        "Sub L2",
       ],
       rows: data?.pettyCash?.map((x) => [
         x.user?.username,
@@ -109,6 +118,9 @@ export const generateReportByUser = async (data, res) => {
           ? x.commentHistory.map((item) => `• ${item.comment}`).join("\n")
           : "-",
         x.status,
+        x.relatedL1?.[0].username,
+        x.mainL2?.username,
+        x.relatedL2 && x.relatedL2?.map((item) => item?.username)?.join(", "),
       ]),
     };
 
@@ -134,6 +146,9 @@ export const generateReportByUser = async (data, res) => {
         "Leave Type",
         "Reason",
         "Status",
+        "L1",
+        "Main L2",
+        "Sub L2",
       ],
       rows: data?.leaves?.map((x) => [
         x.user?.username,
@@ -144,6 +159,9 @@ export const generateReportByUser = async (data, res) => {
         x.leaveType,
         x.reason,
         x.status,
+        x.relatedL1?.[0].username,
+        x.mainL2?.username,
+        x.relatedL2 && x.relatedL2?.map((item) => item?.username)?.join(", "),
       ]),
     };
 
@@ -171,6 +189,9 @@ export const generateExcelReport = async (data, res) => {
       { header: "Time Worked", key: "timeWorked", width: 15 },
       { header: "Comment", key: "comment", width: 40 },
       { header: "Status", key: "status", width: 15 },
+      { header: "L1", key: "L1", width: 40 },
+      { header: "Main L2", key: "mainL2", width: 40 },
+      { header: "Sub L2", key: "subL2", width: 40 },
     ];
     styleHeader(sheet.getRow(1));
     data.timesheets.forEach((x) => {
@@ -182,6 +203,10 @@ export const generateExcelReport = async (data, res) => {
         timeWorked: x.timeWorked,
         comment: x.commentHistory?.map((c) => c.comment).join(" | ") || "-",
         status: x.status,
+        L1: x.relatedL1?.[0].username,
+        mainL2: x.mainL2?.username,
+        subL2:
+          x.relatedL2 && x.relatedL2?.map((item) => item?.username)?.join(", "),
       });
     });
   }
@@ -197,6 +222,9 @@ export const generateExcelReport = async (data, res) => {
       { header: "JV Account", key: "jv", width: 20 },
       { header: "Comment", key: "comment", width: 40 },
       { header: "Status", key: "status", width: 15 },
+      { header: "L1", key: "L1", width: 40 },
+      { header: "Main L2", key: "mainL2", width: 40 },
+      { header: "Sub L2", key: "subL2", width: 40 },
     ];
 
     styleHeader(sheet.getRow(1));
@@ -210,6 +238,10 @@ export const generateExcelReport = async (data, res) => {
         jv: x.JVEntry || "-",
         comment: x.commentHistory?.map((c) => c.comment).join(" | ") || "-",
         status: x.status,
+        L1: x.relatedL1?.[0].username,
+        mainL2: x.mainL2?.username,
+        subL2:
+          x.relatedL2 && x.relatedL2?.map((item) => item?.username)?.join(", "),
       });
     });
   }
