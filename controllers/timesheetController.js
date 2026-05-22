@@ -48,6 +48,8 @@ export const submitTimeSheet = async (req, res) => {
     // const L1Id = L1User._id;
     const L1Id = await findTimeSheetL1(job);
     if (!L1Id) throw new BadRequestError("No L1 found for this data");
+    const L2Id = await findTimeSheetL2(req.user.userId);
+    if (!L2Id) throw new BadRequestError("No L2 found for this data");
     const newTimeSheet = new TimeSheet({
       user: req.user.userId,
       job: job,
@@ -58,6 +60,7 @@ export const submitTimeSheet = async (req, res) => {
     });
     newTimeSheet.statusHistory.push(newStatus);
     newTimeSheet.relatedL1.push(L1Id);
+    newTimeSheet.mainL2 = L2Id;
     if (comment && newTimeSheet.currentComment !== comment) {
       const newComment = {
         date: new Date(),
@@ -342,6 +345,7 @@ export const resubmitTimesheetByL0 = async (req, res) => {
       throw new BadRequestError("This operation is not allowed at the moment");
     const { job, date, time, description, comment } = req.body;
     await checkFor8Hour(req.user.userId, date, time, timesheet._id);
+    await checkDuplicateJobTimeSheet(req.user.userId, job, date, timesheet._id);
     timesheet.status = "L1 Pending";
     timesheet.date = new Date(date);
     timesheet.timeWorked = time;
@@ -386,7 +390,7 @@ export const modifyTimesheetDataL1 = async (req, res) => {
     if (!isAuthorized)
       throw new BadRequestError("Not authorised to do this operation");
     await checkFor8Hour(timesheet.user, date, time, timesheet._id);
-
+    await checkDuplicateJobTimeSheet(timesheet.user, job, date, timesheet._id);
     timesheet.job = job;
     timesheet.date = new Date(date);
     timesheet.timeWorked = Number(time);
@@ -654,7 +658,7 @@ export const modifyL2 = async (req, res) => {
         throw new BadRequestError("User Already Approved this data");
     }
     await checkFor8Hour(timesheet.user, date, time, timesheet._id);
-
+    await checkDuplicateJobTimeSheet(timesheet.user, job, date, timesheet._id);
     timesheet.job = job;
     timesheet.date = new Date(date);
     timesheet.timeWorked = Number(time);
@@ -693,6 +697,7 @@ export const sendBacktoL1 = async (req, res) => {
     timesheet.job = job;
     timesheet.date = new Date(date);
     await checkFor8Hour(timesheet.user, date, time, timesheet._id);
+    await checkDuplicateJobTimeSheet(timesheet.user, date, time, timesheet._id);
     timesheet.timeWorked = time;
     timesheet.description = description;
     const newStatus = {
@@ -734,7 +739,8 @@ export const resubmitByL1 = async (req, res) => {
     if (restrictL1.includes(timesheet.status))
       throw new BadRequestError("This operation is not allowed at the moment");
     const { job, date, time, description, comment } = req.body;
-    await checkFor8Hour(req.user.userId, date, time, timesheet._id);
+    await checkFor8Hour(timesheet.user, date, time, timesheet._id);
+    await checkDuplicateJobTimeSheet(timesheet.user, job, date, timesheet._id);
     timesheet.status = "L2 Pending";
     timesheet.date = new Date(date);
     timesheet.timeWorked = time;
@@ -838,15 +844,15 @@ export const rejectTimeSheetByL3 = async (req, res) => {
     const { comment } = req.body;
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("NO Timesheet found");
-    if (timesheet.status !== "L3 Pending")
-      throw new BadRequestError("Operation not allowed at the moment");
+    // if (timesheet.status !== "L3 Pending")
+    //   throw new BadRequestError("Operation not allowed at the moment");
     const defaultSettings = await Default.findOne();
     if (!defaultSettings)
       throw new NotFoundError("No default settings found for L3");
     if (!defaultSettings.defaultTimeSheetL3)
       throw new BadRequestError("No default L3 found");
     if (defaultSettings.defaultTimeSheetL3.toString() !== userId.toString())
-      throw UnauthorizedError("Invalid L3 User");
+      throw new UnauthorizedError("Invalid L3 User");
     timesheet.status = "L3 Rejected";
     timesheet.statusHistory.push({
       status: "L3 Rejected",
@@ -876,15 +882,15 @@ export const approveTimeSheetL3 = async (req, res) => {
     const { comment } = req.body;
     const timesheet = await TimeSheet.findById(req.params.id);
     if (!timesheet) throw new NotFoundError("NO Timesheet found");
-    if (timesheet.status !== "L3 Pending")
-      throw new BadRequestError("Operation not allowed at the moment");
+    // if (timesheet.status !== "L3 Pending")
+    //   throw new BadRequestError("Operation not allowed at the moment");
     const defaultSettings = await Default.findOne();
     if (!defaultSettings)
       throw new NotFoundError("No default settings found for L3");
     if (!defaultSettings.defaultTimeSheetL3)
       throw new BadRequestError("No default L3 found");
     if (defaultSettings.defaultTimeSheetL3.toString() !== userId.toString())
-      throw UnauthorizedError("Invalid L3 User");
+      throw new UnauthorizedError("Invalid L3 User");
     timesheet.status = "Approved";
     timesheet.statusHistory.push({
       status: "Approved",
@@ -901,6 +907,27 @@ export const approveTimeSheetL3 = async (req, res) => {
     }
     await timesheet.save();
     res.status(200).json({ message: "L3 Approved" });
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json({ error: error.msg || error.message });
+  }
+};
+
+export const deleteTimeSheetL3 = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const timesheet = await TimeSheet.findById(req.params.id);
+    if (!timesheet) throw new NotFoundError("no timesheet has been found");
+    const defaultSettings = await Default.findOne();
+    if (!defaultSettings)
+      throw new NotFoundError("No default settings found for L3");
+    if (!defaultSettings.defaultTimeSheetL3)
+      throw new BadRequestError("No default L3 found");
+    if (defaultSettings.defaultTimeSheetL3.toString() !== userId.toString())
+      throw new UnauthorizedError("Invalid L3 User");
+    await timesheet.deleteOne();
+    res.status(200).json({ message: "Timesheet deleted" });
   } catch (error) {
     res
       .status(error.statusCode || 500)

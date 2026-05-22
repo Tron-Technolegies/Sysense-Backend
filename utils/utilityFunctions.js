@@ -87,7 +87,6 @@ export const restrictL1 = [
 
 export const restrictL2 = [
   "L0 Pending",
-  "L1 Pending",
   "L3 Pending",
   "L1 Rejected",
   "L3 Rejected",

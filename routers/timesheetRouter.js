@@ -3,6 +3,7 @@ import {
   approveDatabyL1,
   approveL2,
   approveTimeSheetL3,
+  deleteTimeSheetL3,
   getDataforL2,
   getDataForL3,
   getPendingActionL1,
@@ -31,12 +32,12 @@ router.patch("/user/sendBackL1/:id", validateTimesheetSubmit, sendBackToL0);
 router.patch(
   "/user/resubmitL0/:id",
   validateTimesheetSubmit,
-  resubmitTimesheetByL0
+  resubmitTimesheetByL0,
 );
 router.patch(
   "/user/modifyL1/:id",
   validateTimesheetSubmit,
-  modifyTimesheetDataL1
+  modifyTimesheetDataL1,
 );
 router.patch("/user/approveL1/:id", approveDatabyL1);
 router.get("/user/pendingL2", getDataforL2);
@@ -48,5 +49,6 @@ router.patch("/user/resubmitL1/:id", validateTimesheetSubmit, resubmitByL1);
 router.get("/user/pendingL3", getDataForL3);
 router.patch("/user/rejectL3/:id", rejectTimeSheetByL3);
 router.patch("/user/approveL3/:id", approveTimeSheetL3);
+router.delete("/user/deleteL3/:id", deleteTimeSheetL3);
 
 export default router;
