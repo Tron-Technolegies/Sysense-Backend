@@ -38,7 +38,7 @@ export const adminLogin = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
   try {
-    const { currentPage, search } = req.query;
+    const { currentPage, search, sortBy } = req.query;
     const queryObject = { isAdmin: { $ne: true } };
     if (search && search.trim() !== "") {
       const searchRegex = new RegExp(search, "i");
@@ -49,12 +49,29 @@ export const getAllUsers = async (req, res) => {
         { email: searchRegex },
       ];
     }
+    const sortOptions = {
+      default: "-createdAt",
+      usernameAZ: "username",
+      usernameZA: "-username",
+      emailAZ: "email",
+      emailZA: "-email",
+      empCodeAZ: "employeeCode",
+      empCodeZA: "-employeeCode",
+    };
     const page = Number(currentPage) || 1;
     const limit = 20;
     const skip = (page - 1) * limit;
+    const sortKey = sortOptions[sortBy] || sortOptions.default;
+    let sortObj = {};
+    if (sortKey.startsWith("-")) {
+      sortObj[sortKey.slice(1)] = -1;
+    } else {
+      sortObj[sortKey] = 1;
+    }
+    sortObj["_id"] = 1;
     const users = await User.find(queryObject)
       .populate("role", "roleName")
-      .sort({ username: 1 })
+      .sort(sortObj)
       .skip(skip)
       .limit(limit);
     const totalUsers = await User.countDocuments(queryObject);
