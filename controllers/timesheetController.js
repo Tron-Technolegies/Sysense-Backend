@@ -934,3 +934,166 @@ export const deleteTimeSheetL3 = async (req, res) => {
       .json({ error: error.msg || error.message });
   }
 };
+
+export const bulkApproveL2 = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { timesheetIds, comment } = req.body;
+
+    if (!Array.isArray(timesheetIds) || timesheetIds.length === 0) {
+      throw new BadRequestError("Please provide timesheet IDs");
+    }
+
+    const timesheets = await TimeSheet.find({
+      _id: { $in: timesheetIds },
+    });
+
+    const updatedTimesheets = [];
+    const failedTimesheets = [];
+
+    for (const timesheet of timesheets) {
+      try {
+        const isAuthorised = timesheet.mainL2?.toString() === userId.toString();
+
+        if (!isAuthorised) {
+          failedTimesheets.push({
+            id: timesheet._id,
+            reason: "Not Authorised",
+          });
+          continue;
+        }
+
+        if (restrictL2.includes(timesheet.status)) {
+          failedTimesheets.push({
+            id: timesheet._id,
+            reason: "Operation not allowed",
+          });
+          continue;
+        }
+
+        const alreadyApproved = timesheet.l2Status?.users?.some(
+          (id) => id.toString() === userId.toString(),
+        );
+
+        if (alreadyApproved) {
+          failedTimesheets.push({
+            id: timesheet._id,
+            reason: "Already Approved",
+          });
+          continue;
+        }
+
+        const isRelatedL2 = timesheet.relatedL2?.some(
+          (id) => id.toString() === userId.toString(),
+        );
+
+        const isMainL2 = timesheet.mainL2?.toString() === userId.toString();
+
+        if (timesheet.l2Status?.status) {
+          const newCompleted = timesheet.l2Status.completed + 1;
+
+          timesheet.l2Status.status = `${newCompleted}/${timesheet.l2Status.stages} L2 Approved`;
+
+          timesheet.l2Status.completed = newCompleted;
+          timesheet.l2Status.users.push(userId);
+        }
+
+        if (comment) {
+          timesheet.currentComment = comment;
+          timesheet.commentHistory.push({
+            date: new Date(),
+            comment,
+            commentedBy: userId,
+          });
+        }
+
+        if (isMainL2 && !isRelatedL2) {
+          timesheet.status = "L3 Pending";
+
+          timesheet.statusHistory.push({
+            date: new Date(),
+            status: "L3 Pending",
+            doneBy: userId,
+          });
+        }
+
+        updatedTimesheets.push(timesheet.save());
+      } catch (err) {
+        failedTimesheets.push({
+          id: timesheet._id,
+          reason: err.message,
+        });
+      }
+    }
+
+    await Promise.all(updatedTimesheets);
+
+    res.status(200).json({
+      msg: "Bulk approval completed",
+      successCount: updatedTimesheets.length,
+      failedCount: failedTimesheets.length,
+      failedTimesheets,
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      error: error.msg || error.message,
+    });
+  }
+};
+
+export const bulkApproveTimeSheetL3 = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { timesheetIds, comment } = req.body;
+
+    const defaultSettings = await Default.findOne();
+
+    if (
+      !defaultSettings ||
+      !defaultSettings.defaultTimeSheetL3 ||
+      defaultSettings.defaultTimeSheetL3.toString() !== userId.toString()
+    ) {
+      throw new UnauthorizedError("Invalid L3 User");
+    }
+
+    const update = {
+      $set: {
+        status: "Approved",
+      },
+      $push: {
+        statusHistory: {
+          status: "Approved",
+          date: new Date(),
+          doneBy: userId,
+        },
+      },
+    };
+
+    if (comment) {
+      update.$set.currentComment = comment;
+
+      update.$push.commentHistory = {
+        date: new Date(),
+        comment,
+        commentedBy: userId,
+      };
+    }
+
+    const result = await TimeSheet.updateMany(
+      {
+        _id: { $in: timesheetIds },
+        status: "L3 Pending", // optional safety check
+      },
+      update,
+    );
+
+    res.status(200).json({
+      message: "Bulk L3 approval completed",
+      modifiedCount: result.modifiedCount,
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      error: error.msg || error.message,
+    });
+  }
+};

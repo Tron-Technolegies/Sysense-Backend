@@ -3,6 +3,8 @@ import {
   approveDatabyL1,
   approveL2,
   approveTimeSheetL3,
+  bulkApproveL2,
+  bulkApproveTimeSheetL3,
   deleteTimeSheetL3,
   getDataforL2,
   getDataForL3,
@@ -50,5 +52,7 @@ router.get("/user/pendingL3", getDataForL3);
 router.patch("/user/rejectL3/:id", rejectTimeSheetByL3);
 router.patch("/user/approveL3/:id", approveTimeSheetL3);
 router.delete("/user/deleteL3/:id", deleteTimeSheetL3);
+router.patch("/user/bulk-approve-L2", bulkApproveL2);
+router.patch("/user/bulk-approve-L3", bulkApproveTimeSheetL3);
 
 export default router;
