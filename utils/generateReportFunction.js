@@ -2,6 +2,17 @@ import PDFDocument from "pdfkit";
 import PDFTable from "pdfkit-table";
 import ExcelJS from "exceljs";
 
+const formatStatusHistory = (history = []) => {
+  return history.length
+    ? history
+        .map(
+          (item) =>
+            `${item.status} | ${item.doneBy?.username || "Unknown"} | ${new Date(item.date).toLocaleString()}`,
+        )
+        .join("\n")
+    : "-";
+};
+
 const startSection = (doc, title) => {
   const safeBottom = doc.page.height - doc.page.margins.bottom - 120;
 
@@ -64,6 +75,7 @@ export const generateReportByUser = async (data, res) => {
         "Time Worked",
         "Comment",
         "Status",
+        "Status History",
         "L1",
         "Main L2",
         "Sub L2",
@@ -78,6 +90,7 @@ export const generateReportByUser = async (data, res) => {
           ? x.commentHistory.map((item) => `• ${item.comment}`).join("\n")
           : "-",
         x.status,
+        formatStatusHistory(x.statusHistory),
         x.relatedL1?.[0].username,
         x.mainL2?.username,
         x.relatedL2 && x.relatedL2?.map((item) => item?.username)?.join(", "),
@@ -104,6 +117,7 @@ export const generateReportByUser = async (data, res) => {
         "JV Account",
         "Comment",
         "Status",
+        "Status History",
         "L1",
         "Main L2",
         "Sub L2",
@@ -118,6 +132,7 @@ export const generateReportByUser = async (data, res) => {
           ? x.commentHistory.map((item) => `• ${item.comment}`).join("\n")
           : "-",
         x.status,
+        formatStatusHistory(x.statusHistory),
         x.relatedL1?.[0].username,
         x.mainL2?.username,
         x.relatedL2 && x.relatedL2?.map((item) => item?.username)?.join(", "),
@@ -146,6 +161,7 @@ export const generateReportByUser = async (data, res) => {
         "Leave Type",
         "Reason",
         "Status",
+        "Status History",
         "L1",
         "Main L2",
         "Sub L2",
@@ -159,6 +175,7 @@ export const generateReportByUser = async (data, res) => {
         x.leaveType,
         x.reason,
         x.status,
+        formatStatusHistory(x.statusHistory),
         x.relatedL1?.[0].username,
         x.mainL2?.username,
         x.relatedL2 && x.relatedL2?.map((item) => item?.username)?.join(", "),
@@ -189,6 +206,11 @@ export const generateExcelReport = async (data, res) => {
       { header: "Time Worked", key: "timeWorked", width: 15 },
       { header: "Comment", key: "comment", width: 40 },
       { header: "Status", key: "status", width: 15 },
+      {
+        header: "Status History",
+        key: "statusHistory",
+        width: 60,
+      },
       { header: "L1", key: "L1", width: 40 },
       { header: "Main L2", key: "mainL2", width: 40 },
       { header: "Sub L2", key: "subL2", width: 40 },
@@ -203,6 +225,7 @@ export const generateExcelReport = async (data, res) => {
         timeWorked: x.timeWorked,
         comment: x.commentHistory?.map((c) => c.comment).join(" | ") || "-",
         status: x.status,
+        statusHistory: formatStatusHistory(x.statusHistory),
         L1: x.relatedL1?.[0].username,
         mainL2: x.mainL2?.username,
         subL2:
