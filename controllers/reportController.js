@@ -42,6 +42,10 @@ export const generateUserReport = async (req, res) => {
       .select("job date timeWorked status user createdAt commentHistory")
       .populate("job", "jobName")
       .populate("user", "username employeeCode")
+      .populate({
+        path: "statusHistory.doneBy",
+        select: "username employeeCode",
+      })
       .lean();
     const totalTimesheets = await TimeSheet.countDocuments(queryObject);
     data.timesheets = timeSheets;
@@ -52,6 +56,10 @@ export const generateUserReport = async (req, res) => {
       .select("job date amount status user JVEntry commentHistory")
       .populate("job", "jobName")
       .populate("user", "username employeeCode")
+      .populate({
+        path: "statusHistory.doneBy",
+        select: "username employeeCode",
+      })
       .lean();
     const totalPettyCash = await PettyCash.countDocuments(queryObject);
     data.pettyCash = pettyCash;
@@ -61,6 +69,10 @@ export const generateUserReport = async (req, res) => {
     const leaves = await Leave.find(queryObject)
       .select("createdAt startDate endDate leaveType reason status user")
       .populate("user", "username employeeCode")
+      .populate({
+        path: "statusHistory.doneBy",
+        select: "username employeeCode",
+      })
       .lean();
     const totalLeaves = await Leave.countDocuments(queryObject);
     data.leaves = leaves;
@@ -134,6 +146,10 @@ export const generateScopedReport = async (req, res) => {
         .populate("relatedL1", "username")
         .populate("relatedL2", "username")
         .populate("mainL2", "username")
+        .populate({
+          path: "statusHistory.doneBy",
+          select: "username employeeCode",
+        })
         .lean();
 
       data.timesheets = timeSheets;
@@ -148,6 +164,10 @@ export const generateScopedReport = async (req, res) => {
         .populate("relatedL1", "username")
         .populate("relatedL2", "username")
         .populate("mainL2", "username")
+        .populate({
+          path: "statusHistory.doneBy",
+          select: "username employeeCode",
+        })
         .lean();
 
       data.pettyCash = pettyCash;
@@ -161,6 +181,10 @@ export const generateScopedReport = async (req, res) => {
         .populate("relatedL1", "username")
         .populate("relatedL2", "username")
         .populate("mainL2", "username")
+        .populate({
+          path: "statusHistory.doneBy",
+          select: "username employeeCode",
+        })
         .lean();
 
       data.leaves = leaves;
@@ -202,6 +226,10 @@ export const generateUserReportExcel = async (req, res) => {
       const timesheets = await TimeSheet.find(queryObject)
         .populate("job", "jobName")
         .populate("user", "username employeeCode")
+        .populate({
+          path: "statusHistory.doneBy",
+          select: "username employeeCode",
+        })
         .lean();
       data.timesheets = timesheets;
     }
@@ -209,12 +237,20 @@ export const generateUserReportExcel = async (req, res) => {
       const pettyCash = await PettyCash.find(queryObject)
         .populate("job", "jobName")
         .populate("user", "username employeeCode")
+        .populate({
+          path: "statusHistory.doneBy",
+          select: "username employeeCode",
+        })
         .lean();
       data.pettyCash = pettyCash;
     }
     if (isLeave) {
       const leaves = await Leave.find(queryObject)
         .populate("user", "username employeeCode")
+        .populate({
+          path: "statusHistory.doneBy",
+          select: "username employeeCode",
+        })
         .lean();
       data.leaves = leaves;
     }
@@ -258,6 +294,10 @@ export const generateScopedReportExcel = async (req, res) => {
         .populate("relatedL1", "username")
         .populate("relatedL2", "username")
         .populate("mainL2", "username")
+        .populate({
+          path: "statusHistory.doneBy",
+          select: "username employeeCode",
+        })
         .lean();
     }
 
@@ -268,12 +308,20 @@ export const generateScopedReportExcel = async (req, res) => {
         .populate("relatedL1", "username")
         .populate("relatedL2", "username")
         .populate("mainL2", "username")
+        .populate({
+          path: "statusHistory.doneBy",
+          select: "username employeeCode",
+        })
         .lean();
     }
 
     if (module === "leave") {
       data.leaves = await Leave.find(queryObject)
         .populate("user", "username employeeCode")
+        .populate({
+          path: "statusHistory.doneBy",
+          select: "username employeeCode",
+        })
         .lean();
     }
 
