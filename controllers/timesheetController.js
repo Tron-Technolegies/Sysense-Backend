@@ -82,10 +82,10 @@ export const submitTimeSheet = async (req, res) => {
 // get the user submitted timesheets as L0
 export const getUserSubmittedTimeSheet = async (req, res) => {
   try {
-    const { status, currentPage, search, date } = req.query;
+    const { status, currentPage, search, startDate, endDate } = req.query;
     const queryObject = { user: req.user.userId };
-    if (status) {
-      queryObject.status = { $regex: status, $options: "i" };
+    if (status && status !== "ALL") {
+      queryObject.status = status;
     }
     if (search) {
       const users = await User.find({
@@ -106,9 +106,9 @@ export const getUserSubmittedTimeSheet = async (req, res) => {
     }
 
     // FILTER BY DATE
-    if (date) {
-      const start = new Date(date);
-      const end = new Date(date);
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
 
       start.setHours(0, 0, 0, 0);
       end.setHours(23, 59, 59, 999);
@@ -194,9 +194,9 @@ export const getPendingActionL1 = async (req, res) => {
     const id = req.user.userId;
     const formattedId = new mongoose.Types.ObjectId(id);
     const queryObject = { relatedL1: formattedId };
-    const { status, currentPage, search, date } = req.query;
-    if (status) {
-      queryObject.status = { $regex: status, $options: "i" };
+    const { status, currentPage, search, startDate, endDate } = req.query;
+    if (status && status !== "ALL") {
+      queryObject.status = status;
     }
     if (search) {
       const users = await User.find({
@@ -217,9 +217,9 @@ export const getPendingActionL1 = async (req, res) => {
     }
 
     // FILTER BY DATE
-    if (date) {
-      const start = new Date(date);
-      const end = new Date(date);
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
 
       start.setHours(0, 0, 0, 0);
       end.setHours(23, 59, 59, 999);
@@ -481,9 +481,9 @@ export const getDataforL2 = async (req, res) => {
     const queryObject = {
       $or: [{ relatedL2: formattedId }, { mainL2: formattedId }],
     };
-    const { status, currentPage, search, date } = req.query;
-    if (status) {
-      queryObject.status = { $regex: status, $options: "i" };
+    const { status, currentPage, search, startDate, endDate } = req.query;
+    if (status && status !== "ALL") {
+      queryObject.status = status;
     }
     if (search) {
       const users = await User.find({
@@ -504,9 +504,9 @@ export const getDataforL2 = async (req, res) => {
     }
 
     // FILTER BY DATE
-    if (date) {
-      const start = new Date(date);
-      const end = new Date(date);
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
 
       start.setHours(0, 0, 0, 0);
       end.setHours(23, 59, 59, 999);
@@ -784,9 +784,9 @@ export const getDataForL3 = async (req, res) => {
     if (defaultSettings.defaultTimeSheetL3.toString() !== id.toString())
       throw new NotFoundError("Invalid L3 User");
     const queryObject = {};
-    const { status, currentPage, search, date } = req.query;
+    const { status, currentPage, search, startDate, endDate } = req.query;
     if (status & (status !== "ALL")) {
-      queryObject.status = { $regex: status, $options: "i" };
+      queryObject.status = status;
     }
     if (search) {
       const users = await User.find({
@@ -807,9 +807,9 @@ export const getDataForL3 = async (req, res) => {
     }
 
     // FILTER BY DATE
-    if (date) {
-      const start = new Date(date);
-      const end = new Date(date);
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
 
       start.setHours(0, 0, 0, 0);
       end.setHours(23, 59, 59, 999);
