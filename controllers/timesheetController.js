@@ -785,7 +785,7 @@ export const getDataForL3 = async (req, res) => {
       throw new NotFoundError("Invalid L3 User");
     const queryObject = {};
     const { status, currentPage, search, startDate, endDate } = req.query;
-    if (status & (status !== "ALL")) {
+    if (status && status !== "ALL") {
       queryObject.status = status;
     }
     if (search) {
