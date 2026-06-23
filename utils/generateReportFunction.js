@@ -2,12 +2,22 @@ import PDFDocument from "pdfkit";
 import PDFTable from "pdfkit-table";
 import ExcelJS from "exceljs";
 
+const formatDate = (date) => {
+  if (!date) return "-";
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(date));
+};
+
 const formatStatusHistory = (history = []) => {
   return history.length
     ? history
         .map(
           (item) =>
-            `${item.status} | ${item.doneBy?.username || "Unknown"} | ${new Date(item.date).toLocaleString()}`,
+            `${item.status} | ${item.doneBy?.username || "Unknown"} | ${formatDate(item.date)}`,
         )
         .join("\n")
     : "-";
@@ -39,7 +49,7 @@ export const generateReportByUser = async (data, res) => {
   doc.moveDown();
 
   doc.fontSize(12).text(`Employee: ${data?.employeeName}`);
-  doc.text(`Period: ${data?.from} to ${data?.to}`);
+  doc.text(`Period: ${formatDate(data?.from)} to ${formatDate(data?.to)}`);
   doc.moveDown(1.5);
 
   //Summary Table
@@ -63,7 +73,7 @@ export const generateReportByUser = async (data, res) => {
   doc.moveDown(2);
 
   //Timesheet Details
-  if (data.timesheets.length > 0) {
+  if (data?.timesheets?.length > 0) {
     startSection(doc, "TimeSheet Details");
 
     const timeSheetTable = {
@@ -83,7 +93,7 @@ export const generateReportByUser = async (data, res) => {
       rows: data?.timesheets?.map((x) => [
         x.user?.username,
         x.user?.employeeCode,
-        new Date(x.createdAt).toLocaleDateString(),
+        formatDate(x.createdAt),
         x.job?.jobName,
         x.timeWorked,
         x.commentHistory && x.commentHistory.length > 0
@@ -105,7 +115,7 @@ export const generateReportByUser = async (data, res) => {
     doc.moveDown(2);
   }
 
-  if (data?.pettyCash.length > 0) {
+  if (data?.pettyCash?.length > 0) {
     startSection(doc, "PettyCash Details");
 
     const pettyCashTable = {
@@ -125,7 +135,7 @@ export const generateReportByUser = async (data, res) => {
       rows: data?.pettyCash?.map((x) => [
         x.user?.username,
         x.user?.employeeCode,
-        new Date(x.date).toLocaleDateString(),
+        formatDate(x.date),
         x.amount,
         x.JVEntry || "-", // ensure field exists
         x.commentHistory && x.commentHistory.length > 0
@@ -169,9 +179,9 @@ export const generateReportByUser = async (data, res) => {
       rows: data?.leaves?.map((x) => [
         x.user?.username,
         x.user?.employeeCode,
-        new Date(x.createdAt).toLocaleDateString(),
-        new Date(x.startDate).toLocaleDateString(),
-        new Date(x.endDate).toLocaleDateString(),
+        formatDate(x.createdAt),
+        formatDate(x.startDate),
+        formatDate(x.endDate),
         x.leaveType,
         x.reason,
         x.status,
@@ -220,7 +230,7 @@ export const generateExcelReport = async (data, res) => {
       sheet.addRow({
         name: x.user?.username,
         employeeNo: x.user?.employeeCode,
-        date: new Date(x.createdAt).toLocaleDateString(),
+        date: formatDate(x.createdAt),
         job: x.job?.jobName,
         timeWorked: x.timeWorked,
         comment: x.commentHistory?.map((c) => c.comment).join(" | ") || "-",
@@ -256,7 +266,7 @@ export const generateExcelReport = async (data, res) => {
       sheet.addRow({
         name: x.user?.username,
         employeeNo: x.user?.employeeCode,
-        date: new Date(x.date).toLocaleDateString(),
+        date: formatDate(x.date),
         amount: x.amount,
         jv: x.JVEntry || "-",
         comment: x.commentHistory?.map((c) => c.comment).join(" | ") || "-",
@@ -289,9 +299,9 @@ export const generateExcelReport = async (data, res) => {
       sheet.addRow({
         name: x.user?.username,
         employeeNo: x.user?.employeeCode,
-        applied: new Date(x.createdAt).toLocaleDateString(),
-        start: new Date(x.startDate).toLocaleDateString(),
-        end: new Date(x.endDate).toLocaleDateString(),
+        applied: formatDate(x.createdAt),
+        start: formatDate(x.startDate),
+        end: formatDate(x.endDate),
         type: x.leaveType,
         reason: x.reason,
         status: x.status,
