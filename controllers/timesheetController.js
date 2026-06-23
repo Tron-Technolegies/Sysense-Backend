@@ -1082,7 +1082,9 @@ export const bulkApproveTimeSheetL3 = async (req, res) => {
     const result = await TimeSheet.updateMany(
       {
         _id: { $in: timesheetIds },
-        status: "L3 Pending", // optional safety check
+        status: {
+          $in: ["L1 Pending", "L2 Pending", "L3 Pending"],
+        }, // optional safety check
       },
       update,
     );
