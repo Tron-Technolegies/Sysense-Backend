@@ -50,15 +50,24 @@ export const submitTimeSheet = async (req, res) => {
     if (!L1Id) throw new BadRequestError("No L1 found for this data");
     const L2Id = await findTimeSheetL2(req.user.userId);
     if (!L2Id) throw new BadRequestError("No L2 found for this data");
+    const isAutoApprovedToL2 = L1Id.toString() === req.user.userId.toString();
+
     const newTimeSheet = new TimeSheet({
       user: req.user.userId,
       job: job,
       date: new Date(date),
       timeWorked: Number(time),
       description: description,
-      status: "L1 Pending",
+      status: isAutoApprovedToL2 ? "L2 Pending" : "L1 Pending",
     });
     newTimeSheet.statusHistory.push(newStatus);
+    if (isAutoApprovedToL2) {
+      newTimeSheet.statusHistory.push({
+        date: new Date(),
+        status: "L2 Pending- automatically approved",
+        doneBy: req.user.userId,
+      });
+    }
     newTimeSheet.relatedL1.push(L1Id);
     newTimeSheet.mainL2 = L2Id;
     if (comment && newTimeSheet.currentComment !== comment) {
@@ -436,6 +445,7 @@ export const approveDatabyL1 = async (req, res) => {
     //   .lean();
     const L2Id = await findTimeSheetL2(timesheet.user);
     if (!L2Id) throw new BadRequestError("Unable to find L2 for this data");
+    const isAutoApprovedToL3 = L2Id.toString() === timesheet.user.toString();
     timesheet.mainL2 = L2Id;
     const defaultSettings = await Default.findOne();
     if (defaultSettings.timeSheetMultipleL2) {
@@ -454,8 +464,15 @@ export const approveDatabyL1 = async (req, res) => {
       status: "L2 Pending",
       doneBy: userId,
     };
-    timesheet.status = "L2 Pending";
+    timesheet.status = isAutoApprovedToL3 ? "L3 Pending" : "L2 Pending";
     timesheet.statusHistory.push(newStatus);
+    if (isAutoApprovedToL3) {
+      timesheet.statusHistory.push({
+        date: new Date(),
+        status: "L3 Pending- automatically approved",
+        doneBy: timesheet.user,
+      });
+    }
     if (comment) {
       timesheet.currentComment = comment;
       timesheet.commentHistory.push({
@@ -779,10 +796,18 @@ export const getDataForL3 = async (req, res) => {
     const defaultSettings = await Default.findOne();
     if (!defaultSettings)
       throw new BadRequestError("No default settings found for L3");
-    if (!defaultSettings.defaultTimeSheetL3)
+
+    const allowedL3Users = Array.isArray(defaultSettings.defaultTimeSheetL3)
+      ? defaultSettings.defaultTimeSheetL3.map((user) => user.toString())
+      : defaultSettings.defaultTimeSheetL3
+        ? [defaultSettings.defaultTimeSheetL3.toString()]
+        : [];
+
+    if (!allowedL3Users.length)
       throw new NotFoundError("No default L3 assigned");
-    if (defaultSettings.defaultTimeSheetL3.toString() !== id.toString())
+    if (!allowedL3Users.includes(id.toString()))
       throw new NotFoundError("Invalid L3 User");
+
     const queryObject = {};
     const { status, currentPage, search, startDate, endDate } = req.query;
     if (status && status !== "ALL") {
@@ -849,10 +874,16 @@ export const rejectTimeSheetByL3 = async (req, res) => {
     const defaultSettings = await Default.findOne();
     if (!defaultSettings)
       throw new NotFoundError("No default settings found for L3");
-    if (!defaultSettings.defaultTimeSheetL3)
-      throw new BadRequestError("No default L3 found");
-    if (defaultSettings.defaultTimeSheetL3.toString() !== userId.toString())
-      throw new UnauthorizedError("Invalid L3 User");
+    const allowedL3Users = Array.isArray(defaultSettings.defaultTimeSheetL3)
+      ? defaultSettings.defaultTimeSheetL3.map((user) => user.toString())
+      : defaultSettings.defaultTimeSheetL3
+        ? [defaultSettings.defaultTimeSheetL3.toString()]
+        : [];
+
+    if (!allowedL3Users.length)
+      throw new NotFoundError("No default L3 assigned");
+    if (!allowedL3Users.includes(userId.toString()))
+      throw new NotFoundError("Invalid L3 User");
     timesheet.status = "L3 Rejected";
     timesheet.statusHistory.push({
       status: "L3 Rejected",
@@ -887,10 +918,16 @@ export const approveTimeSheetL3 = async (req, res) => {
     const defaultSettings = await Default.findOne();
     if (!defaultSettings)
       throw new NotFoundError("No default settings found for L3");
-    if (!defaultSettings.defaultTimeSheetL3)
-      throw new BadRequestError("No default L3 found");
-    if (defaultSettings.defaultTimeSheetL3.toString() !== userId.toString())
-      throw new UnauthorizedError("Invalid L3 User");
+    const allowedL3Users = Array.isArray(defaultSettings.defaultTimeSheetL3)
+      ? defaultSettings.defaultTimeSheetL3.map((user) => user.toString())
+      : defaultSettings.defaultTimeSheetL3
+        ? [defaultSettings.defaultTimeSheetL3.toString()]
+        : [];
+
+    if (!allowedL3Users.length)
+      throw new NotFoundError("No default L3 assigned");
+    if (!allowedL3Users.includes(userId.toString()))
+      throw new NotFoundError("Invalid L3 User");
     timesheet.status = "Approved";
     timesheet.statusHistory.push({
       status: "Approved",
@@ -922,10 +959,16 @@ export const deleteTimeSheetL3 = async (req, res) => {
     const defaultSettings = await Default.findOne();
     if (!defaultSettings)
       throw new NotFoundError("No default settings found for L3");
-    if (!defaultSettings.defaultTimeSheetL3)
-      throw new BadRequestError("No default L3 found");
-    if (defaultSettings.defaultTimeSheetL3.toString() !== userId.toString())
-      throw new UnauthorizedError("Invalid L3 User");
+    const allowedL3Users = Array.isArray(defaultSettings.defaultTimeSheetL3)
+      ? defaultSettings.defaultTimeSheetL3.map((user) => user.toString())
+      : defaultSettings.defaultTimeSheetL3
+        ? [defaultSettings.defaultTimeSheetL3.toString()]
+        : [];
+
+    if (!allowedL3Users.length)
+      throw new NotFoundError("No default L3 assigned");
+    if (!allowedL3Users.includes(userId.toString()))
+      throw new NotFoundError("Invalid L3 User");
     await timesheet.deleteOne();
     res.status(200).json({ message: "Timesheet deleted" });
   } catch (error) {
@@ -1048,14 +1091,19 @@ export const bulkApproveTimeSheetL3 = async (req, res) => {
 
     const defaultSettings = await Default.findOne();
 
-    if (
-      !defaultSettings ||
-      !defaultSettings.defaultTimeSheetL3 ||
-      defaultSettings.defaultTimeSheetL3.toString() !== userId.toString()
-    ) {
-      throw new UnauthorizedError("Invalid L3 User");
-    }
+    if (!defaultSettings)
+      throw new NotFoundError("No default settings found for L3");
 
+    const allowedL3Users = Array.isArray(defaultSettings.defaultTimeSheetL3)
+      ? defaultSettings.defaultTimeSheetL3.map((user) => user.toString())
+      : defaultSettings.defaultTimeSheetL3
+        ? [defaultSettings.defaultTimeSheetL3.toString()]
+        : [];
+
+    if (!allowedL3Users.length)
+      throw new NotFoundError("No default L3 assigned");
+    if (!allowedL3Users.includes(userId.toString()))
+      throw new NotFoundError("Invalid L3 User");
     const update = {
       $set: {
         status: "Approved",

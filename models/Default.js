@@ -11,7 +11,7 @@ const DefaultSchema = new Schema(
       ref: "User",
     },
     defaultTimeSheetL3: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: [mongoose.Schema.Types.ObjectId],
       ref: "User",
     },
     defaultPettyCashL1: {
@@ -55,7 +55,7 @@ const DefaultSchema = new Schema(
       default: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const Default = model("Default", DefaultSchema);
