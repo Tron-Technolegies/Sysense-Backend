@@ -89,7 +89,7 @@ const TimeSheetSchema = new Schema(
       type: l2StatusSchema,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const TimeSheet = model("TimeSheet", TimeSheetSchema);
