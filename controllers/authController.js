@@ -11,11 +11,11 @@ import { sendMail, transporter } from "../utils/nodeMailer.js";
 
 export const registerUser = async (req, res) => {
   try {
-    // const hashedPassword = await hashPassword(req.body.password);
+    const hashedPassword = await hashPassword(req.body.password);
     const newUser = new User({
       username: req.body.username,
       email: req.body.email.toLowerCase(),
-      password: req.body.password,
+      password: hashedPassword,
       //need to add the role later
       employeeCode: req.body.code,
     });
@@ -35,12 +35,10 @@ export const loginUser = async (req, res) => {
       email: email.toLowerCase(),
     });
     if (!user) throw new NotFoundError("User not found");
-    //NEED TO CHANGE BACK . NOW FOR TESTING
-    if (password !== user.password)
+
+    const isPasswordCorrect = await comparePassword(password, user.password);
+    if (!isPasswordCorrect)
       throw new UnauthenticatedError("Invalid credentials");
-    // const isPasswordCorrect = await comparePassword(password, user.password);
-    // if (!isPasswordCorrect)
-    //   throw new UnauthenticatedError("Invalid credentials");
     const token = createJWT({
       userId: user._id,
       //role to be added later
@@ -113,11 +111,9 @@ export const resetPassword = async (req, res) => {
     if (!user) throw new NotFoundError("No user found");
     if (user.verificationCode !== code.toString())
       throw new BadRequestError(
-        "Something went wrong with account verification"
+        "Something went wrong with account verification",
       );
-    // const newPassword = await hashPassword(password);
-    //For testing need to hash password
-    user.password = password;
+    user.password = await hashPassword(password);
     await user.save();
     res.status(200).json({ msg: "successfully updated" });
   } catch (error) {
