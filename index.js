@@ -52,9 +52,12 @@ app.use(
         "https://syssensewebapp.netlify.app",
         "https://syssenseadmin.netlify.app",
         "https://api.syssense.it",
+        "https://webapp.syssense.it",
+        "https://admin.syssense.it",
         "http://localhost:5173",
         "http://localhost:3000",
-        "http://local",
+        "https://syssensewebapp2.netlify.app",
+        "https://syssenseadmin2.netlify.app",
       ];
 
       if (allowedOrigins.includes(origin)) {
